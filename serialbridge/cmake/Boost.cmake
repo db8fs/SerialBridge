@@ -2,10 +2,6 @@
 
 function( checkBoost )
 
-    set( 3rdParty_Boost_DIR "${CMAKE_SOURCE_DIR}/3rdParty/Boost/" CACHE PATH "Boost SDK root")
-
-    set( BOOST_ROOT "${3rdParty_Boost_DIR}" )
-
     set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
     set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
     set( CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY )
@@ -17,13 +13,10 @@ function( checkBoost )
     set( Boost_USE_MULTITHREADED      ON)
     set( Boost_USE_STATIC_RUNTIME     OFF) # MSVCRT runtime dll or static
 
-    find_package(Boost)
-
-    set( 3rdParty_Boost_INCLUDES "${Boost_INCLUDE_DIR}" CACHE PATH "Boost Include paths to use")
-    set( 3rdParty_Boost_LIBS "${Boost_LIBRARIES}" CACHE PATH "Boost Libs to use")
+    find_package(Boost 1.60.0 COMPONENTS program_options system)
 
 endfunction()
 
 checkBoost()
 
-include_directories( ${3rdParty_Boost_INCLUDES} )
+include_directories( ${Boost_INCLUDE_DIRS} )

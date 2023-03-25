@@ -1,8 +1,10 @@
-cmake_minimum_required(VERSION 3.26)
+cmake_minimum_required(VERSION 3.0)
 
 project(SerialBridge)
 
 cmake_policy(SET CMP0020 NEW)
+
+#set( Boost_ROOT "C:/Projekte/3rdParty/boost_1_79_0/" )
 
 include( cmake/Boost.cmake )
 
@@ -19,4 +21,4 @@ add_executable( ${PROJECT_NAME}
                 ${HEADER_FILES}
                 ${SRC_FILES} )
 
-#target_link_libraries( ${3rdParty_Boost_LIBS} )
+target_link_libraries( SerialBridge ${Boost_LIBRARIES} )

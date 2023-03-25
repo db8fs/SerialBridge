@@ -11,11 +11,6 @@
 
 #include"Arguments.h"
 
-#include <boost/lexical_cast.hpp>
-#include <boost/spirit.hpp>
-
-using namespace boost::spirit;
-
 
 int main(int argc, char** argv)
 {
