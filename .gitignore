@@ -1,1 +1,4 @@
 wpa_supplicant.conf
+/build-serialbridge-Desktop-Debug
+/build*/
+/serialbridge/CMakeLists.txt.user
