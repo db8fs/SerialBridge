@@ -21,4 +21,4 @@ add_executable( ${PROJECT_NAME}
                 ${HEADER_FILES}
                 ${SRC_FILES} )
 
-target_link_libraries( SerialBridge ${Boost_LIBRARIES} )
+target_link_libraries( SerialBridge Boost::system Boost::program_options )
