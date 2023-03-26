@@ -9,25 +9,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-#include <deque>
-#include <iostream>
-#include <boost/bind.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/serial_port.hpp>
-#include <boost/date_time/posix_time/posix_time_types.hpp>
-
-//////////////////////////////////////////////////////////////////////////////
-
-using namespace boost::asio;
-
-typedef void (*PREADCOMPLETECALLBACK)(	void* pObject,
-					const char* pReadMsg,
-					size_t nBytesTransferred);
-
-typedef void (*PWRITECOMPLETECALLBACK)(	void* pObject );
-
-
-using flow_control_t = serial_port_base::flow_control::type;
+typedef void (*fnReadComplete)(void* pObject, const char* pReadMsg, size_t nBytesTransferred);
+typedef void (*fnWriteComplete)(void* pObject );
 
 
 /** */
@@ -36,23 +19,32 @@ class SerialPort
 	std::unique_ptr<struct SerialPort_Private> const m_private;
 
  public:
-  SerialPort(	unsigned int uiBaudRate,
-				flow_control_t eFlowControl,
-				const std::string& strDevice );
 
-  ~SerialPort();
+	 enum class eFlowControl : uint8_t
+	 {
+		 None = 0,
+		 Hardware = 1,
+		 Software = 2
+	 };
+
+
+  SerialPort(	const std::string& device,
+				uint32_t baudRate,
+				SerialPort::eFlowControl flowControl );
+
+  ~SerialPort() noexcept;
 
   /** defines asynchronous read completion handler */
-  bool SetReadCompletionCallback(	void* pObject,
-						PREADCOMPLETECALLBACK pCallback	);
+  bool setReadCompleteHandler(	void* pObject,
+						fnReadComplete pCallback	);
 
   /** defines asynchronous write completion handler */
-  bool SetWriteCompletionCallback( void* pObject,
-					   PWRITECOMPLETECALLBACK pCallback );
+  bool setWriteCompleteHandler( void* pObject,
+					   fnWriteComplete pCallback );
 
-  bool Write(const char cMsg) noexcept;
-  bool Close() noexcept;
-  bool IsActive() const; 
+  bool write(const char cMsg) noexcept;
+  bool close() noexcept;
+  bool isActive() const; 
 
 };
 

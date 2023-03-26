@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <cstdlib>
+#include <thread>
 
 #include"Arguments.h"
 #include "SerialPort.h"
@@ -19,17 +20,17 @@ int main(int argc, char** argv)
 
 	(void) parseArguments(options, argc, argv);
   
-	SerialPort serPort(options.uiBaudrate, flow_control_t::none, options.strDevice);
+	SerialPort serPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None);
 
 	std::string text("Hallo Welt\n");
 
 	for (auto i : text)
 	{
-		serPort.Write(i);
+		serPort.write(i);
 	}
 	
 	std::this_thread::sleep_for(std::chrono::milliseconds(500)); //< todo: remove and terminate precise when serialport operations are completed
-	serPort.Close();
+	serPort.close();
 	
 
 #if 0
