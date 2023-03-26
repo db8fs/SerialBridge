@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 
 	
 
-	SerialPort serPort(options.uiBaudrate, SerialPort::flow_control_t::none, options.strDevice);
+	SerialPort serPort(options.uiBaudrate, flow_control_t::none, options.strDevice);
 
 	std::string text("Hallo Welt\n");
 

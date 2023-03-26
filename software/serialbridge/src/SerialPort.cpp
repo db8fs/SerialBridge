@@ -7,24 +7,50 @@
 
 #include "SerialPort.h"
 
+struct SerialPort_Private
+{
+    static constexpr int RX_BUFFER_SIZE = 512;
+
+    bool 	                 m_bActive;
+    io_service            m_oIOService;
+    serial_port            m_oSerialPort;
+    char 	                 m_acReadMsg[RX_BUFFER_SIZE];
+    std::deque<char>       m_qcWriteMsg;
+    PREADCOMPLETECALLBACK	 m_pReadCompleteCallback;
+    PWRITECOMPLETECALLBACK m_pWriteCompleteCallback;
+    void* m_pReadCompleteCallbackObject;
+    void* m_pWriteCompleteCallbackObject;
+
+    std::thread m_thread; //< todo
+
+
+    SerialPort_Private(const std::string & device, uint32_t baudrate, flow_control_t flowControl):
+        m_bActive(true),
+        m_oIOService(),
+        m_oSerialPort(m_oIOService, device),
+        m_pReadCompleteCallback(NULL),
+        m_pWriteCompleteCallback(NULL),
+        m_pReadCompleteCallbackObject(NULL),
+        m_pWriteCompleteCallbackObject(NULL),
+        m_thread([&]() { while (m_bActive) { m_oIOService.run_for(std::chrono::milliseconds(20)); }})
+    {
+    }
+
+};
+
+
+
 SerialPort::SerialPort(	unsigned int uiBaudRate,
 				flow_control_t eFlowControl,
 				const std::string & strDevice
 				)
-  : m_bActive(true),
-    m_oIOService(),
-    m_oSerialPort(m_oIOService, strDevice),
-    m_pReadCompleteCallback(NULL),
-    m_pWriteCompleteCallback(NULL),
-    m_pReadCompleteCallbackObject(NULL),
-    m_pWriteCompleteCallbackObject(NULL),
-    m_thread([&]() { while (m_bActive) { m_oIOService.run_for(std::chrono::milliseconds(20) ); }})
+  : m_private(new SerialPort_Private(strDevice, uiBaudRate, eFlowControl))
 {
   bool bThrow = true;
 
   while(1)
     {
-      if(!m_oSerialPort.is_open())
+      if(!m_private->m_oSerialPort.is_open())
 	{
 	  break;
 	}
@@ -32,8 +58,8 @@ SerialPort::SerialPort(	unsigned int uiBaudRate,
       serial_port_base::flow_control  oFlowControlOption(eFlowControl);
       serial_port_base::baud_rate 	oBaudRateOption(uiBaudRate);
 
-      m_oSerialPort.set_option(oBaudRateOption);
-      m_oSerialPort.set_option(oFlowControlOption);
+      m_private->m_oSerialPort.set_option(oBaudRateOption);
+      m_private->m_oSerialPort.set_option(oFlowControlOption);
 
       if(!StartReading())
 	{
@@ -54,7 +80,7 @@ SerialPort::SerialPort(	unsigned int uiBaudRate,
 
 SerialPort::~SerialPort()
 {
-    m_thread.join();
+    m_private->m_thread.join();
 }
 
 
@@ -66,13 +92,13 @@ bool SerialPort::SetReadCompletionCallback(void* pObject,
 
   if(pCallback)
     {
-      m_pReadCompleteCallback 		= pCallback;
-      m_pReadCompleteCallbackObject 	= pObject;
+      m_private->m_pReadCompleteCallback 		= pCallback;
+      m_private->m_pReadCompleteCallbackObject 	= pObject;
     }
   else
     {
-      m_pReadCompleteCallback 		= NULL;
-      m_pReadCompleteCallbackObject	= NULL;
+      m_private->m_pReadCompleteCallback 		= NULL;
+      m_private->m_pReadCompleteCallbackObject	= NULL;
       bRet = false;
     }
 
@@ -88,13 +114,13 @@ bool SerialPort::SetWriteCompletionCallback(	void* pObject,
 
   if(pCallback)
     {
-      m_pWriteCompleteCallback 		= pCallback;
-      m_pWriteCompleteCallbackObject 	= pObject;
+      m_private->m_pWriteCompleteCallback 		= pCallback;
+      m_private->m_pWriteCompleteCallbackObject 	= pObject;
     }
   else
     {
-      m_pWriteCompleteCallback 		= NULL;
-      m_pWriteCompleteCallbackObject 	= NULL;
+      m_private->m_pWriteCompleteCallback 		= NULL;
+      m_private->m_pWriteCompleteCallbackObject 	= NULL;
       bRet = false;
     }
 
@@ -108,7 +134,7 @@ bool SerialPort::Write(const char cMsg)
 
   try
     {
-      m_oIOService.post(boost::bind(	&SerialPort::ExecuteWriteOperation,
+      m_private->m_oIOService.post(boost::bind(	&SerialPort::ExecuteWriteOperation,
 					this,
 					cMsg));
     }
@@ -129,7 +155,7 @@ bool SerialPort::Close()
 
   try
     {
-      m_oIOService.post(boost::bind(	&SerialPort::ExecuteCloseOperation,
+      m_private->m_oIOService.post(boost::bind(	&SerialPort::ExecuteCloseOperation,
 					this,
 					boost::system::error_code()));
     }
@@ -142,6 +168,10 @@ bool SerialPort::Close()
 }
 
 
+bool SerialPort::IsActive() const 
+{ 
+    return m_private->m_bActive; 
+}
 
 bool SerialPort::StartReading()
 {
@@ -149,7 +179,7 @@ bool SerialPort::StartReading()
 
   try
     {
-      m_oSerialPort.async_read_some( 	boost::asio::buffer(m_acReadMsg, RX_BUFFER_SIZE),
+      m_private->m_oSerialPort.async_read_some( 	boost::asio::buffer(m_private->m_acReadMsg, m_private->RX_BUFFER_SIZE),
 					boost::bind(&SerialPort::ReadOperationComplete,
 						    this,
 						    placeholders::error,
@@ -172,8 +202,8 @@ bool SerialPort::StartWriting()
 
   try
     {
-      boost::asio::async_write(	m_oSerialPort,
-				boost::asio::buffer(&m_qcWriteMsg.front(), 1),
+      boost::asio::async_write(	m_private->m_oSerialPort,
+				boost::asio::buffer(&m_private->m_qcWriteMsg.front(), 1),
 				boost::bind( 	&SerialPort::WriteOperationComplete,
 						this,
 						placeholders::error)
@@ -201,10 +231,10 @@ void SerialPort::ReadOperationComplete(const boost::system::error_code& oError,
 	  break;
 	}
 
-      if(m_pReadCompleteCallback)
+      if(m_private->m_pReadCompleteCallback)
 	{
-	  m_pReadCompleteCallback(m_pReadCompleteCallbackObject,
-				  m_acReadMsg,
+	  m_private->m_pReadCompleteCallback(m_private->m_pReadCompleteCallbackObject,
+				  m_private->m_acReadMsg,
 				  nBytesTransferred);
 	}
 
@@ -236,14 +266,14 @@ void SerialPort::WriteOperationComplete(const boost::system::error_code& oError)
 	  break;
 	}
 
-      if(m_pWriteCompleteCallback)
+      if(m_private->m_pWriteCompleteCallback)
 	{
-	  m_pWriteCompleteCallback(m_pWriteCompleteCallbackObject);
+	  m_private->m_pWriteCompleteCallback(m_private->m_pWriteCompleteCallbackObject);
 	}
 
-      m_qcWriteMsg.pop_front();
+      m_private->m_qcWriteMsg.pop_front();
 
-      if(!m_qcWriteMsg.empty())
+      if(!m_private->m_qcWriteMsg.empty())
 	{
 	  StartWriting();
 	}
@@ -262,9 +292,9 @@ void SerialPort::WriteOperationComplete(const boost::system::error_code& oError)
 
 void SerialPort::ExecuteWriteOperation(const char msg)
 {
-  bool bWriteInProgress = !m_qcWriteMsg.empty();
+  bool bWriteInProgress = !m_private->m_qcWriteMsg.empty();
 
-  m_qcWriteMsg.push_back(msg);
+  m_private->m_qcWriteMsg.push_back(msg);
 
   if(!bWriteInProgress)
     {
@@ -289,8 +319,8 @@ void SerialPort::ExecuteCloseOperation(const boost::system::error_code& oError)
 	}
       else
 	{
-	  m_oSerialPort.close();
-	  m_bActive = false;
+	  m_private->m_oSerialPort.close();
+	  m_private->m_bActive = false;
 	}
       break;
     }
