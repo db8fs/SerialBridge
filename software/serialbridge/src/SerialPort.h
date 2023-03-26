@@ -54,20 +54,6 @@ class SerialPort
   bool Close();
   bool IsActive() const; 
 
- private:
-  
-
-  bool StartReading();
-  bool StartWriting();
-
-  void ReadOperationComplete( const boost::system::error_code& oError,
-			      size_t nBytesTransferred);
-
-  void WriteOperationComplete( const boost::system::error_code& oError);
-
-  void ExecuteWriteOperation(const char cMsg);
-  void ExecuteCloseOperation(const boost::system::error_code& error);
-
 };
 
 
