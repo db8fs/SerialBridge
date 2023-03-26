@@ -27,7 +27,6 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
     options_description generic("Generic");
     options_description device("Device");
     options_description serverInterface("TCP/IP Server Interface");
-    options_description cmdlineinterface("Commands");
 
     generic.add_options()
             ("help,h", "this description")

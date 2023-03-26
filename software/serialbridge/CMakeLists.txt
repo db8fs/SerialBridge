@@ -10,10 +10,10 @@ include( cmake/Boost.cmake )
 
 include_directories( "${CMAKE_SOURCE_DIR}/src/" )
 
-set( HEADER_FILES  "${CMAKE_SOURCE_DIR}/src/Arguments.h" )
-    #"${CMAKE_SOURCE_DIR}/src/SerialPort.h" )
+set( HEADER_FILES  "${CMAKE_SOURCE_DIR}/src/Arguments.h" 
+                   "${CMAKE_SOURCE_DIR}/src/SerialPort.h" )
 
-set( SRC_FILES      #"${CMAKE_SOURCE_DIR}/src/SerialPort.cpp"
+set( SRC_FILES      "${CMAKE_SOURCE_DIR}/src/SerialPort.cpp"
                     "${CMAKE_SOURCE_DIR}/src/Arguments.cpp"
                     "${CMAKE_SOURCE_DIR}/src/main.cpp" )
 

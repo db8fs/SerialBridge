@@ -7,7 +7,7 @@ function( checkBoost )
     set( CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY )
 
     set( Boost_DEBUG ON) # enables verbose CMake output
-    set( Boost_USE_STATIC_LIBS        OFF)  # only find static libs
+    set( Boost_USE_STATIC_LIBS        ON)  # only find static libs
     set( Boost_USE_DEBUG_LIBS         OFF) # ignore debug libs and
     set( Boost_USE_RELEASE_LIBS       ON)  # only find release libs
     set( Boost_USE_MULTITHREADED      ON)

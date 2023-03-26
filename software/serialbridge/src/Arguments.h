@@ -18,8 +18,6 @@ struct Arguments
   std::string strAddress;
   std::string strPort;
   std::string strSSLCert;
-  std::string strCmd;
-  std::string strMode;
   std::string strDevice;
   unsigned int uiBaudrate;
 };

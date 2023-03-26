@@ -37,3 +37,5 @@ wpa_supplicant.conf
 /serialbridge/CMakeFiles/TargetDirectories.txt
 /serialbridge/Makefile
 /serialbridge/cmake_install.cmake
+
+/software/build*/

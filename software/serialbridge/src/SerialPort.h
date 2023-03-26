@@ -45,16 +45,19 @@ class CSerialPort
 	      flow_control_t eFlowControl,
 	      const std::string& strDevice );
 
-  virtual ~CSerialPort();
+  ~CSerialPort();
 
-  virtual bool SetReadCompletionCallback(	void* pObject,
+  /** defines asynchronous read completion handler */
+  bool SetReadCompletionCallback(	void* pObject,
 						PREADCOMPLETECALLBACK pCallback	);
-  virtual bool SetWriteCompletionCallback( void* pObject,
+
+  /** defines asynchronous write completion handler */
+  bool SetWriteCompletionCallback( void* pObject,
 					   PWRITECOMPLETECALLBACK pCallback );
 
-  virtual bool Write(const char cMsg);
-  virtual bool Close();
-  virtual bool IsActive() const { return m_bActive; }
+  bool Write(const char cMsg);
+  bool Close();
+  bool IsActive() const { return m_bActive; }
 
  private:
   static const int RX_BUFFER_SIZE = 512;

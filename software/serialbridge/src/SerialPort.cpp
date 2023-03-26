@@ -1,16 +1,12 @@
-//////////////////////////////////////////////////////////////////////////////
-//! @file 	CSerialPort.cpp
-//! @date	Created on: 31.03.2011
-//! @author	Falk Schilling
-//////////////////////////////////////////////////////////////////////////////
+/**
+* @file   SerialPort.cpp
+* @date   26.03.2023
+* @author Falk Schilling (db8fs)
+* @copyright GPLv3
+*/
 
-#include "CSerialPort.h"
+#include "SerialPort.h"
 
-//////////////////////////////////////////////////////////////////////////////
-
-//////////////////////////////////////////////////////////////////////////
-//! Construction
-//////////////////////////////////////////////////////////////////////////
 
 CSerialPort::CSerialPort(	io_service & oIOService,
 				unsigned int uiBaudRate,
@@ -56,19 +52,12 @@ CSerialPort::CSerialPort(	io_service & oIOService,
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! Destruction
-//////////////////////////////////////////////////////////////////////////
 
 CSerialPort::~CSerialPort()
 {
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This member function tells the CSerialPort object which function to
-//! execute when something arrived through the serial port.
-//////////////////////////////////////////////////////////////////////////
 
 bool CSerialPort::SetReadCompletionCallback(void* pObject,
 					    PREADCOMPLETECALLBACK pCallback	)
@@ -91,10 +80,6 @@ bool CSerialPort::SetReadCompletionCallback(void* pObject,
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This member function tells the CSerialPort object which function to
-//! execute when something was sent through the serial port.
-//////////////////////////////////////////////////////////////////////////
 
 bool CSerialPort::SetWriteCompletionCallback(	void* pObject,
 						PWRITECOMPLETECALLBACK pCallback )
@@ -117,11 +102,6 @@ bool CSerialPort::SetWriteCompletionCallback(	void* pObject,
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function sends a string via the serial port. Returns true
-//! if successful.
-//////////////////////////////////////////////////////////////////////////
-
 bool CSerialPort::Write(const char cMsg)
 {
   bool bRet = true;
@@ -142,10 +122,6 @@ bool CSerialPort::Write(const char cMsg)
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function closes the serial port connection. Returns true if
-//! no error occurred.
-//////////////////////////////////////////////////////////////////////////
 
 bool CSerialPort::Close()
 {
@@ -166,10 +142,6 @@ bool CSerialPort::Close()
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function starts asynchronous read operation and calls the
-//! completion handler if the operation finished.
-//////////////////////////////////////////////////////////////////////////
 
 bool CSerialPort::StartReading()
 {
@@ -180,8 +152,8 @@ bool CSerialPort::StartReading()
       m_oSerialPort.async_read_some( 	boost::asio::buffer(m_acReadMsg, RX_BUFFER_SIZE),
 					boost::bind(&CSerialPort::ReadOperationComplete,
 						    this,
-						    placeholders::error(),
-						    placeholders::bytes_transferred()
+						    placeholders::error,
+						    placeholders::bytes_transferred
 						    )
 					);
     }
@@ -194,11 +166,6 @@ bool CSerialPort::StartReading()
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function starts the asynchronous write operation and calls the
-//! completion handler when it completes or fails.
-//////////////////////////////////////////////////////////////////////////
-
 bool CSerialPort::StartWriting()
 {
   bool bRet = true;
@@ -209,7 +176,7 @@ bool CSerialPort::StartWriting()
 				boost::asio::buffer(&m_qcWriteMsg.front(), 1),
 				boost::bind( 	&CSerialPort::WriteOperationComplete,
 						this,
-						placeholders::error())
+						placeholders::error)
 				);
     }
   catch(...)
@@ -221,9 +188,6 @@ bool CSerialPort::StartWriting()
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This is the completion handler for read operations.
-//////////////////////////////////////////////////////////////////////////
 
 void CSerialPort::ReadOperationComplete(const boost::system::error_code& oError,
 					size_t nBytesTransferred)
@@ -260,9 +224,6 @@ void CSerialPort::ReadOperationComplete(const boost::system::error_code& oError,
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This is the completion handler for write operations.
-//////////////////////////////////////////////////////////////////////////
 
 void CSerialPort::WriteOperationComplete(const boost::system::error_code& oError)
 {
@@ -298,9 +259,6 @@ void CSerialPort::WriteOperationComplete(const boost::system::error_code& oError
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function executes the write operation for the passed character.
-//////////////////////////////////////////////////////////////////////////
 
 void CSerialPort::ExecuteWriteOperation(const char msg)
 {
@@ -315,9 +273,6 @@ void CSerialPort::ExecuteWriteOperation(const char msg)
 }
 
 
-//////////////////////////////////////////////////////////////////////////
-//! This function executes the close operation.
-//////////////////////////////////////////////////////////////////////////
 
 void CSerialPort::ExecuteCloseOperation(const boost::system::error_code& oError)
 {
