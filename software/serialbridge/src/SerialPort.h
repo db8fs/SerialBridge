@@ -34,18 +34,17 @@ typedef void (*PWRITECOMPLETECALLBACK)(	void* pObject );
 //! This class realizes the communication through a serial port interface.
 //////////////////////////////////////////////////////////////////////////
 
-class CSerialPort
+class SerialPort
 {
  public:
   typedef serial_port_base::flow_control::type flow_control_t;
 
  public:
-  CSerialPort(io_service& oIOService,
-	      unsigned int uiBaudRate,
-	      flow_control_t eFlowControl,
-	      const std::string& strDevice );
+  SerialPort(	unsigned int uiBaudRate,
+				flow_control_t eFlowControl,
+				const std::string& strDevice );
 
-  ~CSerialPort();
+  ~SerialPort();
 
   /** defines asynchronous read completion handler */
   bool SetReadCompletionCallback(	void* pObject,
@@ -74,8 +73,9 @@ class CSerialPort
   void ExecuteCloseOperation(const boost::system::error_code& error);
 
  private:
+
   bool 	                 m_bActive;
-  io_service&            m_oIOService;
+  io_service            m_oIOService;
   serial_port            m_oSerialPort;
   char 	                 m_acReadMsg[RX_BUFFER_SIZE];
   std::deque<char>       m_qcWriteMsg;
@@ -83,6 +83,8 @@ class CSerialPort
   PWRITECOMPLETECALLBACK m_pWriteCompleteCallback;
   void*			 m_pReadCompleteCallbackObject;
   void*			 m_pWriteCompleteCallbackObject;
+
+  std::thread m_thread;
 };
 
 

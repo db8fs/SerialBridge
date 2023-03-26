@@ -7,19 +7,18 @@
 
 #include "SerialPort.h"
 
-
-CSerialPort::CSerialPort(	io_service & oIOService,
-				unsigned int uiBaudRate,
+SerialPort::SerialPort(	unsigned int uiBaudRate,
 				flow_control_t eFlowControl,
 				const std::string & strDevice
 				)
   : m_bActive(true),
-    m_oIOService(oIOService),
-    m_oSerialPort(oIOService, strDevice),
+    m_oIOService(),
+    m_oSerialPort(m_oIOService, strDevice),
     m_pReadCompleteCallback(NULL),
     m_pWriteCompleteCallback(NULL),
     m_pReadCompleteCallbackObject(NULL),
-    m_pWriteCompleteCallbackObject(NULL)
+    m_pWriteCompleteCallbackObject(NULL),
+    m_thread([&]() { while (m_bActive) { m_oIOService.run_for(std::chrono::milliseconds(20) ); }})
 {
   bool bThrow = true;
 
@@ -53,13 +52,14 @@ CSerialPort::CSerialPort(	io_service & oIOService,
 
 
 
-CSerialPort::~CSerialPort()
+SerialPort::~SerialPort()
 {
+    m_thread.join();
 }
 
 
 
-bool CSerialPort::SetReadCompletionCallback(void* pObject,
+bool SerialPort::SetReadCompletionCallback(void* pObject,
 					    PREADCOMPLETECALLBACK pCallback	)
 {
   bool bRet = true;
@@ -81,7 +81,7 @@ bool CSerialPort::SetReadCompletionCallback(void* pObject,
 
 
 
-bool CSerialPort::SetWriteCompletionCallback(	void* pObject,
+bool SerialPort::SetWriteCompletionCallback(	void* pObject,
 						PWRITECOMPLETECALLBACK pCallback )
 {
   bool bRet = true;
@@ -102,13 +102,13 @@ bool CSerialPort::SetWriteCompletionCallback(	void* pObject,
 }
 
 
-bool CSerialPort::Write(const char cMsg)
+bool SerialPort::Write(const char cMsg)
 {
   bool bRet = true;
 
   try
     {
-      m_oIOService.post(boost::bind(	&CSerialPort::ExecuteWriteOperation,
+      m_oIOService.post(boost::bind(	&SerialPort::ExecuteWriteOperation,
 					this,
 					cMsg));
     }
@@ -123,13 +123,13 @@ bool CSerialPort::Write(const char cMsg)
 
 
 
-bool CSerialPort::Close()
+bool SerialPort::Close()
 {
   bool bRet = true;
 
   try
     {
-      m_oIOService.post(boost::bind(	&CSerialPort::ExecuteCloseOperation,
+      m_oIOService.post(boost::bind(	&SerialPort::ExecuteCloseOperation,
 					this,
 					boost::system::error_code()));
     }
@@ -143,14 +143,14 @@ bool CSerialPort::Close()
 
 
 
-bool CSerialPort::StartReading()
+bool SerialPort::StartReading()
 {
   bool bRet = true;
 
   try
     {
       m_oSerialPort.async_read_some( 	boost::asio::buffer(m_acReadMsg, RX_BUFFER_SIZE),
-					boost::bind(&CSerialPort::ReadOperationComplete,
+					boost::bind(&SerialPort::ReadOperationComplete,
 						    this,
 						    placeholders::error,
 						    placeholders::bytes_transferred
@@ -166,7 +166,7 @@ bool CSerialPort::StartReading()
 }
 
 
-bool CSerialPort::StartWriting()
+bool SerialPort::StartWriting()
 {
   bool bRet = true;
 
@@ -174,7 +174,7 @@ bool CSerialPort::StartWriting()
     {
       boost::asio::async_write(	m_oSerialPort,
 				boost::asio::buffer(&m_qcWriteMsg.front(), 1),
-				boost::bind( 	&CSerialPort::WriteOperationComplete,
+				boost::bind( 	&SerialPort::WriteOperationComplete,
 						this,
 						placeholders::error)
 				);
@@ -189,7 +189,7 @@ bool CSerialPort::StartWriting()
 
 
 
-void CSerialPort::ReadOperationComplete(const boost::system::error_code& oError,
+void SerialPort::ReadOperationComplete(const boost::system::error_code& oError,
 					size_t nBytesTransferred)
 {
   bool bRet = false;
@@ -225,7 +225,7 @@ void CSerialPort::ReadOperationComplete(const boost::system::error_code& oError,
 
 
 
-void CSerialPort::WriteOperationComplete(const boost::system::error_code& oError)
+void SerialPort::WriteOperationComplete(const boost::system::error_code& oError)
 {
   bool bRet = false;
 
@@ -260,7 +260,7 @@ void CSerialPort::WriteOperationComplete(const boost::system::error_code& oError
 
 
 
-void CSerialPort::ExecuteWriteOperation(const char msg)
+void SerialPort::ExecuteWriteOperation(const char msg)
 {
   bool bWriteInProgress = !m_qcWriteMsg.empty();
 
@@ -274,7 +274,7 @@ void CSerialPort::ExecuteWriteOperation(const char msg)
 
 
 
-void CSerialPort::ExecuteCloseOperation(const boost::system::error_code& oError)
+void SerialPort::ExecuteCloseOperation(const boost::system::error_code& oError)
 {
   while(1)
     {

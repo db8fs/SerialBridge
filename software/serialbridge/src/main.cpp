@@ -10,6 +10,7 @@
 #include <cstdlib>
 
 #include"Arguments.h"
+#include "SerialPort.h"
 
 
 int main(int argc, char** argv)
@@ -21,6 +22,20 @@ int main(int argc, char** argv)
         // todo
     }
 
+	
+
+	SerialPort serPort(options.uiBaudrate, SerialPort::flow_control_t::none, options.strDevice);
+
+	std::string text("Hallo Welt\n");
+
+	for (auto i : text)
+	{
+		serPort.Write(i);
+	}
+	
+	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	serPort.Close();
+	
 
 #if 0
       pWebserver	  = IRGBLightControl::CreateWebserver();
