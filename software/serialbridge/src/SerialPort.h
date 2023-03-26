@@ -10,7 +10,7 @@
  */
 
 #include <string>
-
+#include <memory>
 
 /** */
 class SerialPort

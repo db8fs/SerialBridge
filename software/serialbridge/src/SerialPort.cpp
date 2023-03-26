@@ -14,7 +14,7 @@
 #include <deque>
 #include <map>
 #include <iostream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
@@ -228,7 +228,7 @@ SerialPort::SerialPort(const std::string& device, uint32_t baudRate, SerialPort:
 	{
 		if (!m_private->StartReading())
 		{
-			throw std::exception("Failed to open serial port!\n");
+			throw "Failed to open serial port!\n";
 		}
 	}
 }
