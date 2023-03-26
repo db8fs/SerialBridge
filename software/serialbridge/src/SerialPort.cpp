@@ -1,9 +1,10 @@
 /**
-* @file   SerialPort.cpp
-* @date   26.03.2023
-* @author Falk Schilling (db8fs)
-* @copyright GPLv3
-*/
+ * @file         SerialPort.cpp
+ * @created		 31.03.2011
+ * @date         26.03.2023
+ * @author       Falk Schilling (db8fs)
+ * @copyright    GPLv3
+ */
 
 #include <string>
 #include <memory>

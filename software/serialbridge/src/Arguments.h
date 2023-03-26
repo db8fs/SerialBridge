@@ -1,9 +1,18 @@
 #ifndef ARGUMENTS_H
 #define ARGUMENTS_H
 
+/**
+ * @file		Arguments.h
+ * @date        26.03.2023
+ * @author		Falk Schilling (db8fs)
+ * @copyright	GPLv3
+ */
+
 #include <iostream>
 #include <string>
 
+
+/** command line arguments for this application */
 struct Arguments
 {
   Arguments()

@@ -1,3 +1,11 @@
+
+/**
+ * @file		Arguments.cpp
+ * @date        26.03.2023
+ * @author		Falk Schilling (db8fs)
+ * @copyright	GPLv3
+ */
+
 #include <boost/system/config.hpp>
 #include <boost/program_options.hpp>
 

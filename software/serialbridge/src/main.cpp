@@ -3,7 +3,8 @@
  *  @date   25.03.2023
  *  @author Falk Schilling (db8fs)
  *  @copyright GPLv3
-*/
+ *  @remark migrated from SF/Github RGBLightControl repository
+ */
 
 
 #include <iostream>
