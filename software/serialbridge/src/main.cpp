@@ -17,13 +17,8 @@ int main(int argc, char** argv)
 {
     Arguments options;
 
-    if(parseArguments(options, argc, argv) )
-    {
-        // todo
-    }
-
-	
-
+	(void) parseArguments(options, argc, argv);
+  
 	SerialPort serPort(options.uiBaudrate, flow_control_t::none, options.strDevice);
 
 	std::string text("Hallo Welt\n");
@@ -33,7 +28,7 @@ int main(int argc, char** argv)
 		serPort.Write(i);
 	}
 	
-	std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	std::this_thread::sleep_for(std::chrono::milliseconds(500)); //< todo: remove and terminate precise when serialport operations are completed
 	serPort.Close();
 	
 
