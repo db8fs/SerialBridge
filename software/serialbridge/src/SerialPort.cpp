@@ -38,7 +38,7 @@ struct SerialPort_Private
 
 
 
-    bool StartReading()
+    bool StartReading() noexcept
     {
         bool bRet = true;
 
@@ -61,7 +61,7 @@ struct SerialPort_Private
     }
 
 
-    bool StartWriting()
+    bool StartWriting() noexcept
     {
         bool bRet = true;
 
@@ -199,40 +199,22 @@ struct SerialPort_Private
 ///////////////////////////
 
 
-SerialPort::SerialPort(	unsigned int uiBaudRate,
-				flow_control_t eFlowControl,
-				const std::string & strDevice
-				)
-  : m_private(new SerialPort_Private(strDevice, uiBaudRate, eFlowControl))
+SerialPort::SerialPort(unsigned int uiBaudRate, flow_control_t eFlowControl, const std::string& strDevice )
+	: m_private(new SerialPort_Private(strDevice, uiBaudRate, eFlowControl))
 {
-  bool bThrow = true;
-
-  while(1)
-    {
-      if(!m_private->m_oSerialPort.is_open())
+	if (m_private->m_oSerialPort.is_open())
 	{
-	  break;
+		serial_port_base::flow_control  oFlowControlOption(eFlowControl);
+		serial_port_base::baud_rate 	oBaudRateOption(uiBaudRate);
+
+		m_private->m_oSerialPort.set_option(oBaudRateOption);
+		m_private->m_oSerialPort.set_option(oFlowControlOption);
+
+		if (!m_private->StartReading())
+		{
+			throw std::exception("Failed to open serial port!\n");
+		}
 	}
-
-      serial_port_base::flow_control  oFlowControlOption(eFlowControl);
-      serial_port_base::baud_rate 	oBaudRateOption(uiBaudRate);
-
-      m_private->m_oSerialPort.set_option(oBaudRateOption);
-      m_private->m_oSerialPort.set_option(oFlowControlOption);
-
-      if(!m_private->StartReading())
-	{
-	  break;
-	}
-
-      bThrow = false;
-      break;
-    }
-
-  if(bThrow)
-    {
-      throw "Failed to open serial port!\n";
-    }
 }
 
 
@@ -245,90 +227,81 @@ SerialPort::~SerialPort()
 
 
 bool SerialPort::SetReadCompletionCallback(void* pObject,
-					    PREADCOMPLETECALLBACK pCallback	)
+	PREADCOMPLETECALLBACK pCallback)
 {
-  bool bRet = true;
-
-  if(pCallback)
-    {
-      m_private->m_pReadCompleteCallback 		= pCallback;
-      m_private->m_pReadCompleteCallbackObject 	= pObject;
-    }
-  else
-    {
-      m_private->m_pReadCompleteCallback 		= NULL;
-      m_private->m_pReadCompleteCallbackObject	= NULL;
-      bRet = false;
-    }
-
-  return bRet;
+	if (pCallback)
+	{
+		m_private->m_pReadCompleteCallback = pCallback;
+		m_private->m_pReadCompleteCallbackObject = pObject;
+        return true;
+	}
+	else
+	{
+		m_private->m_pReadCompleteCallback = NULL;
+		m_private->m_pReadCompleteCallbackObject = NULL;
+        return false;
+	}	
 }
 
 
 
-bool SerialPort::SetWriteCompletionCallback(	void* pObject,
-						PWRITECOMPLETECALLBACK pCallback )
+bool SerialPort::SetWriteCompletionCallback(void* pObject,
+	PWRITECOMPLETECALLBACK pCallback)
 {
-  bool bRet = true;
+	bool bRet = true;
 
-  if(pCallback)
-    {
-      m_private->m_pWriteCompleteCallback 		= pCallback;
-      m_private->m_pWriteCompleteCallbackObject 	= pObject;
-    }
-  else
-    {
-      m_private->m_pWriteCompleteCallback 		= NULL;
-      m_private->m_pWriteCompleteCallbackObject 	= NULL;
-      bRet = false;
-    }
-
-  return bRet;
+	if (pCallback)
+	{
+		m_private->m_pWriteCompleteCallback = pCallback;
+		m_private->m_pWriteCompleteCallbackObject = pObject;
+        return true;
+	}
+	else
+	{
+		m_private->m_pWriteCompleteCallback = NULL;
+		m_private->m_pWriteCompleteCallbackObject = NULL;
+		return false;
+	}
 }
 
 
 bool SerialPort::Write(const char cMsg)
 {
-  bool bRet = true;
+	try
+	{
+		m_private->m_oIOService.post(boost::bind(&SerialPort_Private::ExecuteWriteOperation,
+			m_private.get(),
+			cMsg));
+	}
+	catch (...)
+	{
+		return false;
+	}
 
-  try
-    {
-      m_private->m_oIOService.post(boost::bind(	&SerialPort_Private::ExecuteWriteOperation,
-					m_private.get(),
-					cMsg));
-    }
-  catch(...)
-    {
-
-      bRet = false;
-    }
-
-  return bRet;
+	return true;
 }
 
 
 
 bool SerialPort::Close()
 {
-  bool bRet = true;
+	try
+	{
+		m_private->m_oIOService.post(boost::bind(&SerialPort_Private::ExecuteCloseOperation,
+			m_private.get(),
+			boost::system::error_code()));
+	}
+	catch (...)
+	{
+		return false;
+	}
 
-  try
-    {
-      m_private->m_oIOService.post(boost::bind(	&SerialPort_Private::ExecuteCloseOperation,
-					m_private.get(),
-					boost::system::error_code()));
-    }
-  catch(...)
-    {
-      bRet = false;
-    }
-
-  return bRet;
+	return true;
 }
 
 
-bool SerialPort::IsActive() const 
-{ 
-    return m_private->m_bActive; 
+bool SerialPort::IsActive() const
+{
+	return m_private->m_bActive;
 }
 

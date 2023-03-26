@@ -50,8 +50,8 @@ class SerialPort
   bool SetWriteCompletionCallback( void* pObject,
 					   PWRITECOMPLETECALLBACK pCallback );
 
-  bool Write(const char cMsg);
-  bool Close();
+  bool Write(const char cMsg) noexcept;
+  bool Close() noexcept;
   bool IsActive() const; 
 
 };
