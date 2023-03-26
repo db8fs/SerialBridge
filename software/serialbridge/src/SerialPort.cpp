@@ -33,27 +33,25 @@ static std::map<SerialPort::eFlowControl, serial_port_base::flow_control> conver
 
 struct SerialPort_Private
 {
-    static constexpr int RX_BUFFER_SIZE = 512;
+    static constexpr size_t RX_BUF_SIZE = 512;
 
     bool 	               m_active = true;
     io_service             m_ioService;
     serial_port            m_serialPort;
 
-    char 	               m_rxBuffer[RX_BUFFER_SIZE] = {0};
-    std::deque<char>       m_txBuffer;
+    std::vector<char>    m_rxBuffer;
+    std::deque<char>    m_txBuffer;
 
     // completion event handlers
     SerialPort::fnReadComplete	 m_fnReadComplete = nullptr;
     SerialPort::fnWriteComplete  m_fnWriteComplete = nullptr;
 
-    std::thread m_thread; //< todo
-
 
     SerialPort_Private(const std::string & device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
         :   m_ioService(),
-            m_serialPort(m_ioService, device),
-            m_thread([&]() { while (m_active) { m_ioService.run_for(std::chrono::milliseconds(20)); }})
+            m_serialPort(m_ioService, device)
     {
+        m_rxBuffer.resize(RX_BUF_SIZE);
         m_serialPort.set_option(serial_port_base::baud_rate(baudrate));
         m_serialPort.set_option( convertFlowControl[flowControl]);
     }
@@ -64,7 +62,7 @@ struct SerialPort_Private
     {
         try
         {
-            m_serialPort.async_read_some(boost::asio::buffer(m_rxBuffer, RX_BUFFER_SIZE),
+            m_serialPort.async_read_some(boost::asio::buffer(m_rxBuffer.data(), RX_BUF_SIZE),
                 boost::bind(&SerialPort_Private::ReadOperationComplete,
                     this,
                     placeholders::error,
@@ -102,8 +100,7 @@ struct SerialPort_Private
 
 
 
-    void ReadOperationComplete(const boost::system::error_code& oError,
-        size_t nBytesTransferred)
+    void ReadOperationComplete(const boost::system::error_code& oError, size_t nBytesReceived)
     {
         if (oError)
         {
@@ -111,9 +108,15 @@ struct SerialPort_Private
         }
         else
         {
-            if (m_fnReadComplete)
+            if (nBytesReceived > 0)
             {
-                m_fnReadComplete(m_rxBuffer, nBytesTransferred);
+                if (m_fnReadComplete)
+                {
+                    m_fnReadComplete(m_rxBuffer.data(), nBytesReceived);
+                }
+
+                m_rxBuffer.clear();
+                m_rxBuffer.resize(RX_BUF_SIZE);
             }
 
             if (!StartReading())
@@ -136,7 +139,7 @@ struct SerialPort_Private
         {
             if (m_fnWriteComplete)
             {
-                m_fnWriteComplete();
+                m_fnWriteComplete(m_txBuffer.front());
             }
 
             m_txBuffer.pop_front();
@@ -153,7 +156,7 @@ struct SerialPort_Private
 
 
 
-    void write(const char msg)
+    void sendChar(const char msg)
     {
         bool bWriteInProgress = !m_txBuffer.empty();
 
@@ -165,6 +168,35 @@ struct SerialPort_Private
         }
     }
 
+    void sendText(const std::string & msg)
+    {
+        if (!msg.empty())
+        {
+            bool bWriteInProgress = !m_txBuffer.empty();
+
+            std::copy(msg.begin(), msg.end(), std::back_inserter(m_txBuffer));
+
+            if (!bWriteInProgress)
+            {
+                StartWriting();
+            }
+        }
+    }
+
+    void sendBinary(const uint8_t* const msg, size_t length)
+    {
+        if (nullptr != msg)
+        {
+            bool bWriteInProgress = !m_txBuffer.empty();
+
+            std::copy(msg, msg + length, std::back_inserter(m_txBuffer));
+
+            if (!bWriteInProgress)
+            {
+                StartWriting();
+            }
+        }
+    }
 
 
     void close(const boost::system::error_code& oError)
@@ -211,7 +243,7 @@ SerialPort::~SerialPort() noexcept
 {
     try
     {
-        m_private->m_thread.join();
+        m_private.reset();
     }
     catch (...)
     {
@@ -228,44 +260,19 @@ SerialPort& SerialPort::operator=(const SerialPort& rhs)
 }
 
 
-bool SerialPort::setReadCompleteHandler(fnReadComplete pCallback)
+
+void SerialPort::setCallbacks(SerialPort::fnReadComplete onReadHandler, SerialPort::fnWriteComplete onWriteHandler)
 {
-	if (pCallback)
-	{
-		m_private->m_fnReadComplete = pCallback;
-        return true;
-	}
-	else
-	{
-		m_private->m_fnReadComplete = NULL;
-        return false;
-	}	
+    m_private->m_fnReadComplete = onReadHandler;
+    m_private->m_fnWriteComplete = onWriteHandler;
 }
 
 
-
-bool SerialPort::setWriteCompleteHandler(fnWriteComplete pCallback)
-{
-	if (pCallback)
-	{
-		m_private->m_fnWriteComplete = pCallback;
-        return true;
-	}
-	else
-	{
-		m_private->m_fnWriteComplete = NULL;
-		return false;
-	}
-}
-
-
-bool SerialPort::write(const char cMsg) noexcept
+bool SerialPort::send(const char cMsg) noexcept
 {
 	try
 	{
-		m_private->m_ioService.post(boost::bind(&SerialPort_Private::write,
-			m_private.get(),
-			cMsg));
+		m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendChar, m_private.get(), cMsg));
 	}
 	catch (...)
 	{
@@ -275,6 +282,41 @@ bool SerialPort::write(const char cMsg) noexcept
 	return true;
 }
 
+
+bool SerialPort::send(const std::string& text)
+{
+    try
+    {
+        m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendText,
+            m_private.get(),
+            text));
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+
+bool SerialPort::send(const uint8_t* const data, size_t length)
+{
+    try
+    {
+        m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendBinary,
+            m_private.get(),
+            data,
+            length));
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    return true;
+}
 
 
 bool SerialPort::close() noexcept
@@ -297,6 +339,23 @@ bool SerialPort::close() noexcept
 bool SerialPort::isActive() const
 {
 	return m_private->m_active;
+}
+
+
+void SerialPort::update()
+{
+    if (m_private->m_active)
+    {
+        m_private->m_ioService.run();
+    }
+}
+
+void SerialPort::update(uint16_t durationMs)
+{
+    if (m_private->m_active) 
+    { 
+        m_private->m_ioService.run_for(std::chrono::milliseconds(durationMs)); 
+    }
 }
 
 

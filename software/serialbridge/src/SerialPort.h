@@ -9,6 +9,8 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
+#include <string>
+
 
 /** */
 class SerialPort
@@ -17,8 +19,8 @@ class SerialPort
 
 public:
 
-	typedef void (*fnReadComplete)(const char* pReadMsg, size_t nBytesTransferred);
-	typedef void (*fnWriteComplete)();
+	typedef void (*fnReadComplete)(const char* msg, size_t length);
+	typedef void (*fnWriteComplete)(const char msg);
 
 	/** possible handshake settings for serial connections */
 	enum class eFlowControl : uint8_t
@@ -36,20 +38,29 @@ public:
 
 	SerialPort& operator=(const SerialPort&);
 
-	/** defines asynchronous read completion handler */
-	bool setReadCompleteHandler(fnReadComplete pCallback);
+	/** defines asynchronous read or write completion handlers */
+	void setCallbacks(SerialPort::fnReadComplete onReadHandler, SerialPort::fnWriteComplete onWriteHandler);
 
-	/** defines asynchronous write completion handler */
-	bool setWriteCompleteHandler(fnWriteComplete pCallback);
+	/** transmit single character */
+	bool send(const char cMsg) noexcept;
 
-	/** tx single character */
-	bool write(const char cMsg) noexcept;
+	/** transmit text */
+	bool send(const std::string& text);
+
+	/** transmit buffer */
+	bool send(const uint8_t* const data, size_t length);
 
 	/** closes device */
 	bool close() noexcept;
 
 	/** true if still transceiving */
 	bool isActive() const;
+
+	/** perform transceive operations (blocking) */
+	void update();
+
+	/** perform transceive operations for a timeslice given in milliseconds */
+	void update(uint16_t durationMs);
 
 };
 

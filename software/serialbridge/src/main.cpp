@@ -14,6 +14,23 @@
 #include "SerialPort.h"
 
 
+void onReadComplete(const char* msg, size_t length)
+{
+	std::cout << "\nRX: ";
+	
+	for (auto i(0); i < length; ++i)
+	{
+		std::cout << msg[i];
+	}
+}
+
+
+void onWriteComplete(const char msg)
+{
+	std::cout << "TX: " << msg;
+}
+
+
 int main(int argc, char** argv)
 {
     Arguments options;
@@ -22,14 +39,11 @@ int main(int argc, char** argv)
   
 	SerialPort serPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None);
 
-	std::string text("Hallo Welt\n");
+	serPort.setCallbacks(&onReadComplete, nullptr);
 
-	for (auto i : text)
-	{
-		serPort.write(i);
-	}
+	serPort.send("This is a sample text message\n");
 	
-	std::this_thread::sleep_for(std::chrono::milliseconds(500)); //< todo: remove and terminate precise when serialport operations are completed
+	serPort.update(5000);
 	serPort.close();
 	
 
