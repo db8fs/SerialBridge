@@ -43,11 +43,8 @@ struct SerialPort_Private
     std::deque<char>       m_txBuffer;
 
     // completion event handlers
-    fnReadComplete	 m_fnReadComplete = nullptr;
-    fnWriteComplete m_fnWriteComplete = nullptr;
-    void* m_objReadComplete = nullptr;
-    void* m_objWriteComplete = nullptr;
-
+    SerialPort::fnReadComplete	 m_fnReadComplete = nullptr;
+    SerialPort::fnWriteComplete  m_fnWriteComplete = nullptr;
 
     std::thread m_thread; //< todo
 
@@ -116,9 +113,7 @@ struct SerialPort_Private
         {
             if (m_fnReadComplete)
             {
-                m_fnReadComplete(m_objReadComplete,
-                    m_rxBuffer,
-                    nBytesTransferred);
+                m_fnReadComplete(m_rxBuffer, nBytesTransferred);
             }
 
             if (!StartReading())
@@ -141,7 +136,7 @@ struct SerialPort_Private
         {
             if (m_fnWriteComplete)
             {
-                m_fnWriteComplete(m_objWriteComplete);
+                m_fnWriteComplete();
             }
 
             m_txBuffer.pop_front();
@@ -205,6 +200,11 @@ SerialPort::SerialPort(const std::string& device, uint32_t baudRate, SerialPort:
 	}
 }
 
+SerialPort::SerialPort(const SerialPort& rhs)
+    : m_private(rhs.m_private)
+{
+}
+
 
 
 SerialPort::~SerialPort() noexcept
@@ -218,40 +218,42 @@ SerialPort::~SerialPort() noexcept
     }
 }
 
+SerialPort& SerialPort::operator=(const SerialPort& rhs)
+{
+    if (this != &rhs)
+    {
+        this->m_private = rhs.m_private;
+    }
+    return *this;
+}
 
 
-bool SerialPort::setReadCompleteHandler(void* pObject,
-	fnReadComplete pCallback)
+bool SerialPort::setReadCompleteHandler(fnReadComplete pCallback)
 {
 	if (pCallback)
 	{
 		m_private->m_fnReadComplete = pCallback;
-		m_private->m_objReadComplete = pObject;
         return true;
 	}
 	else
 	{
 		m_private->m_fnReadComplete = NULL;
-		m_private->m_objReadComplete = NULL;
         return false;
 	}	
 }
 
 
 
-bool SerialPort::setWriteCompleteHandler(void* pObject,
-	fnWriteComplete pCallback)
+bool SerialPort::setWriteCompleteHandler(fnWriteComplete pCallback)
 {
 	if (pCallback)
 	{
 		m_private->m_fnWriteComplete = pCallback;
-		m_private->m_objWriteComplete = pObject;
         return true;
 	}
 	else
 	{
 		m_private->m_fnWriteComplete = NULL;
-		m_private->m_objWriteComplete = NULL;
 		return false;
 	}
 }
@@ -296,4 +298,5 @@ bool SerialPort::isActive() const
 {
 	return m_private->m_active;
 }
+
 

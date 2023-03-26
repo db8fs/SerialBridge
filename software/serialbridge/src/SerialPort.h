@@ -9,42 +9,47 @@
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef void (*fnReadComplete)(void* pObject, const char* pReadMsg, size_t nBytesTransferred);
-typedef void (*fnWriteComplete)(void* pObject );
-
 
 /** */
 class SerialPort
 {
-	std::unique_ptr<struct SerialPort_Private> const m_private;
+	std::shared_ptr<struct SerialPort_Private> m_private;
 
- public:
+public:
 
-	 enum class eFlowControl : uint8_t
-	 {
-		 None = 0,
-		 Hardware = 1,
-		 Software = 2
-	 };
+	typedef void (*fnReadComplete)(const char* pReadMsg, size_t nBytesTransferred);
+	typedef void (*fnWriteComplete)();
 
+	/** possible handshake settings for serial connections */
+	enum class eFlowControl : uint8_t
+	{
+		None = 0,
+		Hardware = 1,
+		Software = 2
+	};
 
-  SerialPort(	const std::string& device,
-				uint32_t baudRate,
-				SerialPort::eFlowControl flowControl );
+	/** connects to given serial port device (e.g. \\.\COM1, /dev/ttyUSB0, /dev/cu0) with the given USART parameters (e.g. 115200, NoFlowControl) */
+	SerialPort(const std::string& device, uint32_t baudRate, SerialPort::eFlowControl flowControl);
 
-  ~SerialPort() noexcept;
+	SerialPort(const SerialPort&);
+	~SerialPort() noexcept;
 
-  /** defines asynchronous read completion handler */
-  bool setReadCompleteHandler(	void* pObject,
-						fnReadComplete pCallback	);
+	SerialPort& operator=(const SerialPort&);
 
-  /** defines asynchronous write completion handler */
-  bool setWriteCompleteHandler( void* pObject,
-					   fnWriteComplete pCallback );
+	/** defines asynchronous read completion handler */
+	bool setReadCompleteHandler(fnReadComplete pCallback);
 
-  bool write(const char cMsg) noexcept;
-  bool close() noexcept;
-  bool isActive() const; 
+	/** defines asynchronous write completion handler */
+	bool setWriteCompleteHandler(fnWriteComplete pCallback);
+
+	/** tx single character */
+	bool write(const char cMsg) noexcept;
+
+	/** closes device */
+	bool close() noexcept;
+
+	/** true if still transceiving */
+	bool isActive() const;
 
 };
 
