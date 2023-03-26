@@ -265,7 +265,7 @@ bool SerialPort::SetWriteCompletionCallback(void* pObject,
 }
 
 
-bool SerialPort::Write(const char cMsg)
+bool SerialPort::Write(const char cMsg) noexcept
 {
 	try
 	{
@@ -283,7 +283,7 @@ bool SerialPort::Write(const char cMsg)
 
 
 
-bool SerialPort::Close()
+bool SerialPort::Close() noexcept
 {
 	try
 	{
