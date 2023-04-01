@@ -34,10 +34,10 @@ public:
 		tcpServer(options.strAddress, options.port, options.strSSLCert)
 	{
 		serialPort.setCallbacks(&onSerialReadComplete, nullptr);
-		tcpServer.setCallbacks(&onAcceptConnection, &onTcpReadComplete, nullptr);
+		tcpServer.setCallbacks(nullptr, &onTcpReadComplete, nullptr);
 		
 		serialPort.send(HelloString);
-		tcpServer.send(HelloString);
+		//tcpServer.send(HelloString);
 	}
 
 
@@ -62,13 +62,7 @@ public:
 		}
 	}
 
-	static void onAcceptConnection(const boost::system::error_code & ec)
-	{
-		if (!ec)
-		{
-			std::cout << "Connected" << std::endl;
-		}
-	}
+
 
 };
 
@@ -91,6 +85,11 @@ int main(int argc, char** argv)
 			std::cout << "================================" << std::endl;
 
 			std::cout << std::endl << options;
+		}
+		catch (boost::system::system_error& ex)
+		{
+			std::cout << ex.what() << std::endl;
+			std::cout << ">>> Aborting...";
 		}
 		catch (...)
 		{

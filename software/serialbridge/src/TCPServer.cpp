@@ -25,6 +25,24 @@ using namespace boost::asio;
 using namespace boost::asio::ip;
 
 
+static void onAcceptConnection(const boost::system::error_code& ec)
+{
+    if (!ec)
+    {
+        std::cout << "Connected" << std::endl;
+    }
+
+#if 0
+    if (m_private->m_socket.is_open())
+    {
+        if (!m_private->StartReading())
+        {
+            throw std::exception();
+        }
+    }
+#endif
+}
+
 
 
 struct TCPServer_Private
@@ -48,14 +66,14 @@ struct TCPServer_Private
 
     TCPServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
         :   m_ioService(System::IOService()),
-            m_endpoint(tcp::v4(), port),
+            m_endpoint(ip::address::from_string(address), port),
             m_acceptor(m_ioService, m_endpoint),
-            m_socket(m_ioService)
+            m_socket(m_ioService, m_endpoint.protocol())
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
         
         m_acceptor.listen();
-        m_acceptor.async_accept(m_socket, m_fnAcceptConnection);
+        m_acceptor.async_accept(m_socket, &onAcceptConnection);
     }
 
 
@@ -229,13 +247,6 @@ TCPServer::TCPServer(const std::string& address, uint16_t port, const std::strin
     {
         m_private = std::shared_ptr<TCPServer_Private>(new TCPServer_Private(address, port, sslCert));
 
-        if (m_private->m_socket.is_open())
-        {
-            if (!m_private->StartReading())
-            {
-                throw std::exception();
-            }
-        }
     }
     catch (...)
     {
