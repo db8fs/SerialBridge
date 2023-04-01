@@ -10,6 +10,7 @@
 #include <boost/program_options.hpp>
 
 #include "Arguments.h"
+#include "System.h"
 
 std::ostream &operator<<(std::ostream & oStream, const Arguments & conf)
 {
@@ -48,7 +49,7 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
             ;
 
     serverInterface.add_options()
-            ("ip,i", value< std::string >()->default_value( "127.0.0.1" ), "Address of the server" )
+            ("ip,i", value< std::string >()->default_value( System::ALL_INTERFACES ), "Address of the server" )
             ("port,p", value<uint16_t>()->default_value( 23 ), "Tcp port of the server" )
             ("ssl-cert,r", value< std::string >()->default_value( "" ), "ssl cert of the server" )
             ;

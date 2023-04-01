@@ -10,6 +10,7 @@
 
 #include <boost/asio.hpp>
 
+const std::string System::ALL_INTERFACES = "all interfaces";
 
 struct System_Private
 {
@@ -30,4 +31,7 @@ void System::run()
 {
 	m_private.ioService.run();
 }
+
+
+
 

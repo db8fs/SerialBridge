@@ -23,6 +23,11 @@ public:
 
 	/** runs the io service */
 	static void run();
+
+
+	/** the identifier to connect to all sockets */
+	static const std::string ALL_INTERFACES;
+
 };
 
 #endif /* SYSTEM_H_F827BDB7_196A_434A_A479_074B19BE93BC */

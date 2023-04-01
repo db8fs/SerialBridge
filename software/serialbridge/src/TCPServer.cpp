@@ -46,7 +46,7 @@ static void onAcceptConnection(const boost::system::error_code& ec)
 
 static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 {
-    if (address != "127.0.0.1")
+    if (address != System::ALL_INTERFACES)
     {
         return tcp::endpoint(address::from_string(address), port);
     }
