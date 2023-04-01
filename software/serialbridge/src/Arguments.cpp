@@ -107,6 +107,7 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
         if(vm.count("config"))
         {
             std::cout << config;
+            return false;
         }
     }
     catch(...)

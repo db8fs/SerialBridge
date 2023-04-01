@@ -7,12 +7,14 @@
  */
 
 
+#include <csignal>
 #include <iostream>
 #include <cstdlib>
 #include <thread>
 
-#include"Arguments.h"
+#include "Arguments.h"
 #include "SerialPort.h"
+#include "System.h"
 
 
 void onReadComplete(const char* msg, size_t length)
@@ -32,21 +34,36 @@ void onWriteComplete(const char msg)
 }
 
 
+
 int main(int argc, char** argv)
 {
     Arguments options;
 
-	(void) parseArguments(options, argc, argv);
-  
-	SerialPort serPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None);
+	if (parseArguments(options, argc, argv))
+	{
+		try
+		{
 
-	serPort.setCallbacks(&onReadComplete, nullptr);
+			SerialPort serPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None);
 
-	serPort.send("This is a sample text message\n");
-	
-	serPort.update(5000);
-	serPort.close();
-	
+			serPort.setCallbacks(&onReadComplete, nullptr);
+
+			serPort.send("This is a sample text message\n");
+
+			System::run();
+		}
+		catch (const char* const text)
+		{
+			std::cout << ">>> FATAL: " << text << std::endl;
+			std::cout << "================================" << std::endl;
+
+			std::cout << std::endl << options;
+		}
+		catch (...)
+		{
+			std::cout << ">>> Aborting...";
+		}
+	}
 
 #if 0
       pWebserver	  = IRGBLightControl::CreateWebserver();

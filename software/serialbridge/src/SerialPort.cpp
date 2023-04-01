@@ -9,6 +9,7 @@
 #include <string>
 #include <memory>
 
+#include "System.h"
 #include "SerialPort.h"
 
 #include <deque>
@@ -37,11 +38,11 @@ struct SerialPort_Private
     static constexpr size_t RX_BUF_SIZE = 512;
 
     bool 	               m_active = true;
-    io_service             m_ioService;
+    io_service &           m_ioService;
     serial_port            m_serialPort;
 
-    std::vector<char>    m_rxBuffer;
-    std::deque<char>    m_txBuffer;
+    std::vector<char>      m_rxBuffer;
+    std::deque<char>       m_txBuffer;
 
     // completion event handlers
     SerialPort::fnReadComplete	 m_fnReadComplete = nullptr;
@@ -49,7 +50,7 @@ struct SerialPort_Private
 
 
     SerialPort_Private(const std::string & device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
-        :   m_ioService(),
+        :   m_ioService(System::IOService()),
             m_serialPort(m_ioService, device)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -222,15 +223,23 @@ struct SerialPort_Private
 
 
 SerialPort::SerialPort(const std::string& device, uint32_t baudRate, SerialPort::eFlowControl flowControl)
-	: m_private(new SerialPort_Private(device, baudRate, flowControl))
 {
-	if (m_private->m_serialPort.is_open())
-	{
-		if (!m_private->StartReading())
-		{
-			throw "Failed to open serial port!\n";
-		}
-	}
+    try
+    {
+        m_private = std::shared_ptr<SerialPort_Private>(new SerialPort_Private(device, baudRate, flowControl));
+
+        if (m_private->m_serialPort.is_open())
+        {
+            if (!m_private->StartReading())
+            {
+                throw std::exception();
+            }
+        }
+    }
+    catch (...)
+    {
+        throw "Failed to open serial port!";
+    }
 }
 
 SerialPort::SerialPort(const SerialPort& rhs)
@@ -244,6 +253,7 @@ SerialPort::~SerialPort() noexcept
 {
     try
     {
+        this->close();
         m_private.reset();
     }
     catch (...)
@@ -343,20 +353,5 @@ bool SerialPort::isActive() const
 }
 
 
-void SerialPort::update()
-{
-    if (m_private->m_active)
-    {
-        m_private->m_ioService.run();
-    }
-}
-
-void SerialPort::update(uint16_t durationMs)
-{
-    if (m_private->m_active) 
-    { 
-        m_private->m_ioService.run_for(std::chrono::milliseconds(durationMs)); 
-    }
-}
 
 

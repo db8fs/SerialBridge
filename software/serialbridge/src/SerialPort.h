@@ -56,12 +56,6 @@ public:
 	/** true if still transceiving */
 	bool isActive() const;
 
-	/** perform transceive operations (blocking) */
-	void update();
-
-	/** perform transceive operations for a timeslice given in milliseconds */
-	void update(uint16_t durationMs);
-
 };
 
 
