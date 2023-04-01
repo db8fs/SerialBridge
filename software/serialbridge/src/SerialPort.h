@@ -1,5 +1,5 @@
-#ifndef CSERIALPORT_H_
-#define CSERIALPORT_H_
+#ifndef SERIALPORT_H_D7494F87_CA8B_4CD9_AC65_2567099262DC
+#define SERIALPORT_H_D7494F87_CA8B_4CD9_AC65_2567099262DC
 
 /**
  * @file		SerialPort.h
@@ -61,4 +61,4 @@ public:
 
 //////////////////////////////////////////////////////////////////////////////
 
-#endif /* CSERIALPORT_H_ */
+#endif /* SERIALPORT_H_D7494F87_CA8B_4CD9_AC65_2567099262DC */

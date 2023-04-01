@@ -16,7 +16,7 @@ std::ostream &operator<<(std::ostream & oStream, const Arguments & conf)
     oStream << "SerialBridge Configuration " << std::endl
             << "------------------------------" << std::endl;
     oStream << "Address: " << conf.strAddress << std::endl;
-    oStream << "Port: " << conf.strPort << std::endl;
+    oStream << "Port: " << conf.port << std::endl;
     oStream << "Device: " << conf.strDevice << std::endl;
     oStream << "Baudrate: " << conf.uiBaudrate << std::endl;
 
@@ -49,8 +49,8 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
 
     serverInterface.add_options()
             ("ip,i", value< std::string >()->default_value( "127.0.0.1" ), "Address of the server" )
-            ("port,p", value< std::string >()->default_value( "23" ), "Tcp port of the server" )
-            //("ssl-cert,r", value< std::string >()->default_value( "" ), "ssl cert of the server" )
+            ("port,p", value<uint16_t>()->default_value( 23 ), "Tcp port of the server" )
+            ("ssl-cert,r", value< std::string >()->default_value( "" ), "ssl cert of the server" )
             ;
 
     cmdlineOptions.add(generic).add(device).add(serverInterface);
@@ -80,7 +80,7 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
 
         if(vm.count("port"))
         {
-            config.strPort = vm["port"].as< std::string > ();
+            config.port = vm["port"].as<uint16_t> ();
         }
 
         if(vm.count("ssl-cert"))

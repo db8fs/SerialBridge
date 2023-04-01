@@ -1,5 +1,5 @@
-#ifndef ARGUMENTS_H
-#define ARGUMENTS_H
+#ifndef ARGUMENTS_H_D0B5E333_DDD7_4F7C_B571_EB8BF014FFB6
+#define ARGUMENTS_H_D0B5E333_DDD7_4F7C_B571_EB8BF014FFB6
 
 /**
  * @file		Arguments.h
@@ -17,7 +17,7 @@ struct Arguments
 {
   Arguments()
     : strAddress("127.0.0.1"),
-      strPort("23"),
+      port(23),
       strSSLCert(""),
       strDevice("/dev/ttyUSB0"),
       uiBaudrate(115200)
@@ -25,10 +25,10 @@ struct Arguments
   }
 
   std::string strAddress;
-  std::string strPort;
+  uint16_t      port;
   std::string strSSLCert;
   std::string strDevice;
-  unsigned int uiBaudrate;
+  uint32_t uiBaudrate;
 };
 
 std::ostream &operator<<(std::ostream & oStream, const Arguments & conf);
@@ -36,4 +36,4 @@ std::ostream &operator<<(std::ostream & oStream, const Arguments & conf);
 
 bool parseArguments(Arguments & config, int argc, char* argv[]);
 
-#endif // ARGUMENTS_H
+#endif /* ARGUMENTS_H_D0B5E333_DDD7_4F7C_B571_EB8BF014FFB6 */

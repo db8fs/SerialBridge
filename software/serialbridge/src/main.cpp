@@ -15,24 +15,62 @@
 #include "Arguments.h"
 #include "SerialPort.h"
 #include "System.h"
+#include "TCPServer.h"
+
+constexpr char* const HelloString = "SerialBridge\n";
 
 
-void onReadComplete(const char* msg, size_t length)
+/* creates a tcp server socket for bridging serial UART data into a tcp network */
+class SerialBridge
 {
-	std::cout << "\nRX: ";
-	
-	for (auto i(0); i < length; ++i)
+	Arguments  options;
+	SerialPort serialPort;
+	TCPServer  tcpServer;
+
+public:
+	SerialBridge(const Arguments& options)
+		: options(options),
+		serialPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None),
+		tcpServer(options.strAddress, options.port, options.strSSLCert)
 	{
-		std::cout << msg[i];
+		serialPort.setCallbacks(&onSerialReadComplete, nullptr);
+		tcpServer.setCallbacks(&onAcceptConnection, &onTcpReadComplete, nullptr);
+		
+		serialPort.send(HelloString);
+		tcpServer.send(HelloString);
 	}
-}
 
 
-void onWriteComplete(const char msg)
-{
-	std::cout << "TX: " << msg;
-}
 
+	static void onSerialReadComplete(const char* msg, size_t length)
+	{
+		std::cout << "\nRX: ";
+
+		for (auto i(0); i < length; ++i)
+		{
+			std::cout << msg[i];
+		}
+	}
+
+	static void onTcpReadComplete(const char* msg, size_t length)
+	{
+		std::cout << "\nRX: ";
+
+		for (auto i(0); i < length; ++i)
+		{
+			std::cout << msg[i];
+		}
+	}
+
+	static void onAcceptConnection(const boost::system::error_code & ec)
+	{
+		if (!ec)
+		{
+			std::cout << "Connected" << std::endl;
+		}
+	}
+
+};
 
 
 int main(int argc, char** argv)
@@ -43,12 +81,7 @@ int main(int argc, char** argv)
 	{
 		try
 		{
-
-			SerialPort serPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None);
-
-			serPort.setCallbacks(&onReadComplete, nullptr);
-
-			serPort.send("This is a sample text message\n");
+			SerialBridge bridge(options);
 
 			System::run();
 		}
