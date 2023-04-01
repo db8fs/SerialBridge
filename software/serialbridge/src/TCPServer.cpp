@@ -44,6 +44,19 @@ static void onAcceptConnection(const boost::system::error_code& ec)
 }
 
 
+static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
+{
+    if (address != "127.0.0.1")
+    {
+        return tcp::endpoint(address::from_string(address), port);
+    }
+    else
+    {
+        return tcp::endpoint(tcp::v4(), port);
+    }
+}
+
+
 
 struct TCPServer_Private
 {
@@ -66,7 +79,7 @@ struct TCPServer_Private
 
     TCPServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
         :   m_ioService(System::IOService()),
-            m_endpoint(ip::address::from_string(address), port),
+            m_endpoint(createEndpoint(address, port)),
             m_acceptor(m_ioService, m_endpoint),
             m_socket(m_ioService, m_endpoint.protocol())
     {
