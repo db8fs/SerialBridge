@@ -8,6 +8,8 @@
  * @copyright	GPLv3
  */
 
+#include <string>
+
 namespace boost { namespace asio { class io_context; } }
 
 
