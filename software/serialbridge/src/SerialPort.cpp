@@ -25,11 +25,11 @@
 using namespace boost::asio;
 
 
-static std::map<SerialPort::eFlowControl, serial_port_base::flow_control> convertFlowControl = 
+static std::map<enum SerialPort::eFlowControl, serial_port_base::flow_control> convertFlowControl = 
 {
-    std::pair<SerialPort::eFlowControl, serial_port_base::flow_control>( SerialPort::eFlowControl::None, serial_port_base::flow_control::none ),
-    std::pair<SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::Hardware, serial_port_base::flow_control::hardware),
-    std::pair<SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::Software, serial_port_base::flow_control::software)
+    std::pair<enum SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::None, serial_port_base::flow_control::none ),
+    std::pair<enum SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::Hardware, serial_port_base::flow_control::hardware),
+    std::pair<enum SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::Software, serial_port_base::flow_control::software)
 };
 
 
@@ -222,7 +222,7 @@ struct SerialPort_Private
 ///////////////////////////
 
 
-SerialPort::SerialPort(const std::string& device, uint32_t baudRate, SerialPort::eFlowControl flowControl)
+SerialPort::SerialPort(const std::string& device, uint32_t baudRate, enum SerialPort::eFlowControl flowControl)
 {
     try
     {
