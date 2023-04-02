@@ -14,6 +14,10 @@
 #include <deque>
 #include <map>
 #include <iostream>
+
+#include <boost/bind.hpp>
+#include <memory>
+
 #include <boost/bind/bind.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -24,6 +28,8 @@
 using namespace boost::asio;
 using namespace boost::asio::ip;
 
+
+// TODO: accept handling, start reading/writing on socket only if client is connected and if serialdevice is present
 
 static void onAcceptConnection(const boost::system::error_code& ec)
 {
@@ -43,6 +49,197 @@ static void onAcceptConnection(const boost::system::error_code& ec)
 #endif
 }
 
+static bool StartReading(class TCPConnection & connection) noexcept;
+static bool StartWriting(class TCPConnection & connection) noexcept;
+static void ReadOperationComplete(class TCPConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
+static void WriteOperationComplete(class TCPConnection & connection, const boost::system::error_code& oError);
+
+
+
+class TCPConnection : public std::enable_shared_from_this<TCPConnection>
+{
+public:
+    static constexpr size_t RX_BUF_SIZE = 512;
+
+    std::vector<char>      m_rxBuffer;
+    std::deque<char>       m_txBuffer;
+
+    tcp::socket            m_socket;
+
+
+    TCPConnection(io_service& ioService, tcp::endpoint& endPoint)
+        : m_socket(ioService, endPoint.protocol())
+    {
+        m_rxBuffer.resize(RX_BUF_SIZE);
+    }
+
+    tcp::socket& getSocket() { return m_socket; }
+
+    void close(const boost::system::error_code& oError)
+    {
+        if (oError == boost::asio::error::operation_aborted)
+        {
+            std::cerr << "TCPServer Error: " << oError.message() << std::endl;
+        }
+        else
+        {
+            m_socket.shutdown(tcp::socket::shutdown_both);
+            m_socket.close();
+        }
+    }
+
+
+
+    void sendChar(const char msg)
+    {
+        bool bWriteInProgress = !m_txBuffer.empty();
+
+        m_txBuffer.push_back(msg);
+
+        if (!bWriteInProgress)
+        {
+            StartWriting(*this);
+        }
+    }
+
+
+    void sendText(const std::string& msg)
+    {
+        if (!msg.empty())
+        {
+            bool bWriteInProgress = !m_txBuffer.empty();
+
+            std::copy(msg.begin(), msg.end(), std::back_inserter(m_txBuffer));
+
+            if (!bWriteInProgress)
+            {
+                StartWriting(*this);
+            }
+        }
+    }
+
+
+    void sendBinary(const uint8_t* const msg, size_t length)
+    {
+        if (nullptr != msg)
+        {
+            bool bWriteInProgress = !m_txBuffer.empty();
+
+            std::copy(msg, msg + length, std::back_inserter(m_txBuffer));
+
+            if (!bWriteInProgress)
+            {
+                StartWriting(*this);
+            }
+        }
+    }
+};
+
+
+
+bool StartReading(TCPConnection & connection) noexcept
+{
+    try
+    {
+        connection.m_socket.async_read_some(boost::asio::buffer(connection.m_rxBuffer.data(), connection.RX_BUF_SIZE),
+            boost::bind(ReadOperationComplete,
+                boost::ref(connection),
+                placeholders::error,
+                placeholders::bytes_transferred
+            )
+        );
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+bool StartWriting(TCPConnection & connection) noexcept
+{
+    try
+    {
+        boost::asio::async_write(connection.m_socket,
+            boost::asio::buffer(&connection.m_txBuffer.front(), 1),
+            boost::bind(WriteOperationComplete,
+                boost::ref(connection),
+                placeholders::error)
+        );
+    }
+    catch (...)
+    {
+        return false;
+    }
+
+    return true;
+}
+
+
+
+void ReadOperationComplete(TCPConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived)
+{
+    if (oError)
+    {
+        connection.close(oError);
+    }
+    else
+    {
+        if (nBytesReceived > 0)
+        {
+#if 0
+            if (m_fnReadComplete)
+            {
+                m_fnReadComplete(m_rxBuffer.data(), nBytesReceived);
+            }
+#endif
+
+            connection.m_rxBuffer.clear();
+            connection.m_rxBuffer.resize(connection.RX_BUF_SIZE);
+        }
+
+        if (!StartReading(connection))
+        {
+            //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
+        }
+    }    
+}
+
+
+
+void WriteOperationComplete(TCPConnection & connection, const boost::system::error_code& oError)
+{
+    if (oError)
+    {
+        connection.close(oError);
+    }
+    else
+    {
+#if 0
+        if (m_fnWriteComplete)
+        {
+            m_fnWriteComplete(m_txBuffer.front());
+        }
+#endif
+
+        connection.m_txBuffer.pop_front();
+
+        if (!connection.m_txBuffer.empty())
+        {
+            if (!StartWriting(connection))
+            {
+                //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
+            }
+        }
+    }
+}
+
+
+
+
+
 
 static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 {
@@ -60,16 +257,11 @@ static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 
 struct TCPServer_Private
 {
-    static constexpr size_t RX_BUF_SIZE = 512;
-
-    bool 	               m_active = true;
     io_service &           m_ioService;
-    tcp::endpoint          m_endpoint;
+    tcp::endpoint          m_endPoint;
     tcp::acceptor          m_acceptor;
-    tcp::socket            m_socket;
 
-    std::vector<char>      m_rxBuffer;
-    std::deque<char>       m_txBuffer;
+    std::shared_ptr<TCPConnection> m_connection;
 
     // completion event handlers
     TCPServer::fnReadComplete	    m_fnReadComplete = nullptr;
@@ -79,172 +271,80 @@ struct TCPServer_Private
 
     TCPServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
         :   m_ioService(System::IOService()),
-            m_endpoint(createEndpoint(address, port)),
-            m_acceptor(m_ioService, m_endpoint),
-            m_socket(m_ioService, m_endpoint.protocol())
-    {
-        m_rxBuffer.resize(RX_BUF_SIZE);
-        
+            m_endPoint(createEndpoint(address, port)),
+            m_acceptor(m_ioService, m_endPoint)
+    {        
         m_acceptor.listen();
-        m_acceptor.async_accept(m_socket, &onAcceptConnection);
+
+        this->startAccepting();
     }
 
 
-
-    bool StartReading() noexcept
+    void startAccepting()
     {
-        try
-        {
-            m_socket.async_read_some(boost::asio::buffer(m_rxBuffer.data(), RX_BUF_SIZE),
-                boost::bind(&TCPServer_Private::ReadOperationComplete,
-                    this,
-                    placeholders::error,
-                    placeholders::bytes_transferred
-                )
-            );
-        }
-        catch (...)
-        {
-            return false;
-        }
-
-        return true;
+        m_connection = std::shared_ptr<TCPConnection>(new TCPConnection( m_ioService, m_endPoint));
+        m_acceptor.async_accept(m_connection->getSocket(), boost::bind(&TCPServer_Private::onAccept, this, m_connection, placeholders::error));
     }
 
 
-    bool StartWriting() noexcept
+    void onAccept(std::shared_ptr<TCPConnection> connection, const boost::system::error_code& error)
     {
-        try
+        if (!error)
         {
-            boost::asio::async_write(m_socket,
-                boost::asio::buffer(&m_txBuffer.front(), 1),
-                boost::bind(&TCPServer_Private::WriteOperationComplete,
-                    this,
-                    placeholders::error)
-            );
-        }
-        catch (...)
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-
-
-    void ReadOperationComplete(const boost::system::error_code& oError, size_t nBytesReceived)
-    {
-        if (oError)
-        {
-            close(oError);
-        }
-        else
-        {
-            if (nBytesReceived > 0)
+            if (connection != nullptr)
             {
-                if (m_fnReadComplete)
-                {
-                    m_fnReadComplete(m_rxBuffer.data(), nBytesReceived);
-                }
-
-                m_rxBuffer.clear();
-                m_rxBuffer.resize(RX_BUF_SIZE);
-            }
-
-            if (!StartReading())
-            {
-                //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
+                std::cout << "onAccept" << std::endl;
+                StartReading(*connection);
             }
         }
-        
+
+        this->startAccepting();
     }
 
 
-
-    void WriteOperationComplete(const boost::system::error_code& oError)
-    {
-        if (oError)
-        {
-            close(oError);
-        }
-        else
-        {
-            if (m_fnWriteComplete)
-            {
-                m_fnWriteComplete(m_txBuffer.front());
-            }
-
-            m_txBuffer.pop_front();
-
-            if (!m_txBuffer.empty())
-            {
-                if (!StartWriting())
-                {
-                    //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
-                }
-            }
-        }
-    }
+ 
 
 
 
     void sendChar(const char msg)
     {
-        bool bWriteInProgress = !m_txBuffer.empty();
-
-        m_txBuffer.push_back(msg);
-
-        if (!bWriteInProgress)
+        if (nullptr != m_connection)
         {
-            StartWriting();
+            m_connection->sendChar(msg);
         }
+        
     }
 
     void sendText(const std::string & msg)
     {
-        if (!msg.empty())
+        if (nullptr != m_connection)
         {
-            bool bWriteInProgress = !m_txBuffer.empty();
-
-            std::copy(msg.begin(), msg.end(), std::back_inserter(m_txBuffer));
-
-            if (!bWriteInProgress)
-            {
-                StartWriting();
-            }
+            m_connection->sendText(msg);
         }
     }
 
     void sendBinary(const uint8_t* const msg, size_t length)
     {
-        if (nullptr != msg)
+        if (nullptr != m_connection)
         {
-            bool bWriteInProgress = !m_txBuffer.empty();
-
-            std::copy(msg, msg + length, std::back_inserter(m_txBuffer));
-
-            if (!bWriteInProgress)
+            if (nullptr != msg)
             {
-                StartWriting();
+                m_connection->sendBinary(msg, length);
             }
         }
     }
 
-
-    void close(const boost::system::error_code& oError)
+    void close(boost::system::error_code ec)
     {
-        if (oError == boost::asio::error::operation_aborted)
+        if (nullptr != m_connection)
         {
-            std::cerr << "TCPServer Error: " << oError.message() << std::endl;
-        }
-        else
-        {
-            m_socket.shutdown(tcp::socket::shutdown_both);
-            m_socket.close();
-            m_active = false;
+            m_connection->close(ec);
+            m_connection.reset();
         }
     }
+
+
+   
 
 };
 
@@ -266,6 +366,7 @@ TCPServer::TCPServer(const std::string& address, uint16_t port, const std::strin
         throw "Failed to create TCP Server!";
     }
 }
+
 
 TCPServer::TCPServer(const TCPServer& rhs)
     : m_private(rhs.m_private)
@@ -374,7 +475,7 @@ bool TCPServer::close() noexcept
 
 bool TCPServer::isActive() const
 {
-	return m_private->m_active;
+	return m_private->m_connection != nullptr;
 }
 
 
