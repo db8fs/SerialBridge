@@ -67,13 +67,41 @@ public:
     tcp::socket            m_socket;
 
 
-    TCPConnection(io_service& ioService, tcp::endpoint& endPoint)
-        : m_socket(ioService, endPoint.protocol())
+    TCPConnection(tcp::socket socket)
+        : m_socket(std::move(socket))
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
     }
+    void start()
+    {
+        do_read();
+    }
 
-    tcp::socket& getSocket() { return m_socket; }
+    void do_read()
+    {
+        auto self(shared_from_this());
+        m_socket.async_read_some(boost::asio::buffer(m_rxBuffer.data(), m_rxBuffer.size()),
+            [this, self](boost::system::error_code ec, std::size_t length)
+            {
+                if (!ec)
+                {
+                    do_write(length);
+                }
+            });
+    }
+
+    void do_write(std::size_t length)
+    {
+        auto self(shared_from_this());
+        boost::asio::async_write(m_socket, boost::asio::buffer(m_rxBuffer.data(), length),
+            [this, self](boost::system::error_code ec, std::size_t /*length*/)
+            {
+                if (!ec)
+                {
+                    do_read();
+                }
+            });
+    }
 
     void close(const boost::system::error_code& oError)
     {
@@ -282,8 +310,19 @@ struct TCPServer_Private
 
     void startAccepting()
     {
-        m_connection = std::shared_ptr<TCPConnection>(new TCPConnection( m_ioService, m_endPoint));
-        m_acceptor.async_accept(m_connection->getSocket(), boost::bind(&TCPServer_Private::onAccept, this, m_connection, placeholders::error));
+        //m_connection = std::shared_ptr<TCPConnection>(new TCPConnection( m_ioService, m_endPoint));
+        //m_acceptor.async_accept(m_connection->m_socket, boost::bind(&TCPServer_Private::onAccept, this, m_connection, placeholders::error));
+
+        m_acceptor.async_accept(
+            [this](boost::system::error_code ec, tcp::socket socket)
+            {
+                if (!ec)
+                {
+                    std::make_shared<TCPConnection>(std::move(socket))->start();
+                }
+
+                this->startAccepting();
+            });
     }
 
 
@@ -296,6 +335,10 @@ struct TCPServer_Private
                 std::cout << "onAccept" << std::endl;
                 StartReading(*connection);
             }
+        }
+        else
+        {
+            std::cout << error.what() << std::endl;
         }
 
         this->startAccepting();
