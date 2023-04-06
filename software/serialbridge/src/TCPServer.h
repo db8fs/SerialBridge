@@ -23,7 +23,7 @@ public:
 	class ITcpHandler
 	{
 	public:
-		virtual ~ITcpHandler() = 0 {}
+		virtual ~ITcpHandler() {}
 
 		virtual void onTcpReadComplete(const char* msg, size_t length) = 0;
 		virtual void onTcpClientAccept() = 0;

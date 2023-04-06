@@ -22,7 +22,7 @@ public:
 	class ISerialHandler
 	{
 	public:
-		virtual ~ISerialHandler() = 0 {}
+		virtual ~ISerialHandler() {}
 
 		virtual void onSerialReadComplete(const char* msg, size_t length) = 0;
 		virtual void onSerialWriteComplete(const char* msg, size_t length) = 0;
