@@ -12,27 +12,36 @@
 #include <memory>
 #include <boost/system.hpp>
 
+
 /** */
-class TCPServer
+class TcpServer
 {
-	std::shared_ptr<struct TCPServer_Private> m_private;
+	std::shared_ptr<struct TcpServer_Private> m_private;
 
 public:
 
-	typedef void (*fnReadComplete)(const char* msg, size_t length);
-	typedef void (*fnWriteComplete)(const char msg);
-	typedef void (*fnAcceptConnection)(const boost::system::error_code & ec);
+	class ITcpHandler
+	{
+	public:
+		virtual ~ITcpHandler() = 0 {}
+
+		virtual void onTcpReadComplete(const char* msg, size_t length) = 0;
+		virtual void onTcpClientAccept() = 0;
+		virtual void onTcpClientDisconnect() = 0;
+	};
+
+
 
 	/** creates a tcp server listening on the given socket */
-	TCPServer(const std::string& address, uint16_t tcpPort, const std::string & sslCert);
+	TcpServer(const std::string& address, uint16_t tcpPort, const std::string & sslCert);
 
-	TCPServer(const TCPServer&);
-	~TCPServer() noexcept;
+	TcpServer(const TcpServer&);
+	~TcpServer() noexcept;
 
-	TCPServer& operator=(const TCPServer&);
+	TcpServer& operator=(const TcpServer&);
 
 	/** defines asynchronous read or write completion handlers */
-	void setCallbacks(TCPServer::fnAcceptConnection onAccept, TCPServer::fnReadComplete onReadHandler, TCPServer::fnWriteComplete onWriteHandler);
+	void setHandler(ITcpHandler* const handler);
 
 	/** transmit single character */
 	bool send(const char cMsg) noexcept;

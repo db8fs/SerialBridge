@@ -17,15 +17,18 @@
 #include "System.h"
 #include "TCPServer.h"
 
-constexpr char* const HelloString = "SerialBridge\n";
+constexpr char* const HelloString = "SerialBridge\n\r";
 
 
 /* creates a tcp server socket for bridging serial UART data into a tcp network */
-class SerialBridge
+class SerialBridge :	private SerialPort::ISerialHandler,
+						private TcpServer::ITcpHandler
 {
 	Arguments  options;
 	SerialPort serialPort;
-	TCPServer  tcpServer;
+	TcpServer  tcpServer;
+
+	bool connected = false;
 
 public:
 	SerialBridge(const Arguments& options)
@@ -33,35 +36,46 @@ public:
 		serialPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None),
 		tcpServer(options.strAddress, options.port, options.strSSLCert)
 	{
-		serialPort.setCallbacks(&onSerialReadComplete, nullptr);
-		tcpServer.setCallbacks(nullptr, &onTcpReadComplete, nullptr);
-		
-		serialPort.send(HelloString);
-		//tcpServer.send(HelloString);
+		serialPort.setHandler(this);
+		tcpServer.setHandler(this);
 	}
 
-
-
-	static void onSerialReadComplete(const char* msg, size_t length)
+	void onSerialReadComplete(const char* msg, size_t length)
 	{
-		std::cout << "\nRX: ";
-
-		for (auto i(0); i < length; ++i)
+		if (connected)
 		{
-			std::cout << msg[i];
+			tcpServer.send((uint8_t*)msg, length);
 		}
 	}
 
-	static void onTcpReadComplete(const char* msg, size_t length)
+	void onTcpReadComplete(const char* msg, size_t length)
 	{
-		std::cout << "\nRX: ";
-
-		for (auto i(0); i < length; ++i)
+		if (connected)
 		{
-			std::cout << msg[i];
+			serialPort.send((uint8_t*)msg, length);
 		}
 	}
 
+
+	void onSerialWriteComplete(const char* msg, size_t length)
+	{
+	}
+	
+
+	void onTcpClientAccept()
+	{
+		tcpServer.send(HelloString);
+		connected = true;
+
+		std::cout << "Client Connect" << std::endl;
+	}
+
+	void onTcpClientDisconnect()
+	{
+		connected = false;
+
+		std::cout << "Client Disconnect" << std::endl;
+	}
 
 
 };

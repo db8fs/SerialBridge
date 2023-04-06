@@ -45,8 +45,7 @@ struct SerialPort_Private
     std::deque<char>       m_txBuffer;
 
     // completion event handlers
-    SerialPort::fnReadComplete	 m_fnReadComplete = nullptr;
-    SerialPort::fnWriteComplete  m_fnWriteComplete = nullptr;
+    SerialPort::ISerialHandler* m_handler = nullptr;
 
 
     SerialPort_Private(const std::string & device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
@@ -112,9 +111,9 @@ struct SerialPort_Private
         {
             if (nBytesReceived > 0)
             {
-                if (m_fnReadComplete)
+                if (nullptr != m_handler)
                 {
-                    m_fnReadComplete(m_rxBuffer.data(), nBytesReceived);
+                    m_handler->onSerialReadComplete(m_rxBuffer.data(), nBytesReceived);
                 }
 
                 m_rxBuffer.clear();
@@ -139,9 +138,9 @@ struct SerialPort_Private
         }
         else
         {
-            if (m_fnWriteComplete)
+            if (nullptr != m_handler)
             {
-                m_fnWriteComplete(m_txBuffer.front());
+                m_handler->onSerialWriteComplete(&m_txBuffer.front(), 1);
             }
 
             m_txBuffer.pop_front();
@@ -272,10 +271,9 @@ SerialPort& SerialPort::operator=(const SerialPort& rhs)
 
 
 
-void SerialPort::setCallbacks(SerialPort::fnReadComplete onReadHandler, SerialPort::fnWriteComplete onWriteHandler)
+void SerialPort::setHandler(ISerialHandler* const handler)
 {
-    m_private->m_fnReadComplete = onReadHandler;
-    m_private->m_fnWriteComplete = onWriteHandler;
+    m_private->m_handler = handler;
 }
 
 

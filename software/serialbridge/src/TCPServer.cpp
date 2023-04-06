@@ -29,34 +29,14 @@ using namespace boost::asio;
 using namespace boost::asio::ip;
 
 
-// TODO: accept handling, start reading/writing on socket only if client is connected and if serialdevice is present
 
-static void onAcceptConnection(const boost::system::error_code& ec)
-{
-    if (!ec)
-    {
-        std::cout << "Connected" << std::endl;
-    }
-
-#if 0
-    if (m_private->m_socket.is_open())
-    {
-        if (!m_private->StartReading())
-        {
-            throw std::exception();
-        }
-    }
-#endif
-}
-
-static bool StartReading(class TCPConnection & connection) noexcept;
-static bool StartWriting(class TCPConnection & connection) noexcept;
-static void ReadOperationComplete(class TCPConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
-static void WriteOperationComplete(class TCPConnection & connection, const boost::system::error_code& oError);
+static bool StartWriting(class TcpConnection & connection) noexcept;
+static void ReadOperationComplete(class TcpConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
+static void WriteOperationComplete(class TcpConnection & connection, const boost::system::error_code& oError);
 
 
 
-class TCPConnection : public std::enable_shared_from_this<TCPConnection>
+class TcpConnection : public std::enable_shared_from_this<TcpConnection>
 {
 public:
     static constexpr size_t RX_BUF_SIZE = 512;
@@ -66,42 +46,55 @@ public:
 
     tcp::socket            m_socket;
 
+    TcpServer::ITcpHandler* const &   m_handler;
 
-    TCPConnection(tcp::socket socket)
-        : m_socket(std::move(socket))
+    TcpConnection(tcp::socket socket, TcpServer::ITcpHandler* const & handler)
+        : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
     }
+
+
+
     void start()
     {
-        do_read();
+        if (nullptr != m_handler)
+        {
+            m_handler->onTcpClientAccept();
+        }
+
+        read();
     }
 
-    void do_read()
+    void read()
     {
         auto self(shared_from_this());
         m_socket.async_read_some(boost::asio::buffer(m_rxBuffer.data(), m_rxBuffer.size()),
-            [this, self](boost::system::error_code ec, std::size_t length)
+            [this, self](boost::system::error_code error, std::size_t length)
             {
-                if (!ec)
+                if (error)
                 {
-                    do_write(length);
+                    if (boost::asio::error::eof == error ||
+                        boost::asio::error::connection_reset)
+                    {
+                        if (nullptr != m_handler)
+                        {
+                            m_handler->onTcpClientDisconnect();
+                        }
+                    }
+                }
+                else
+                {
+                    if (nullptr != m_handler)
+                    {
+                        m_handler->onTcpReadComplete(m_rxBuffer.data(), length);
+                    }
+
+                    read();
                 }
             });
     }
 
-    void do_write(std::size_t length)
-    {
-        auto self(shared_from_this());
-        boost::asio::async_write(m_socket, boost::asio::buffer(m_rxBuffer.data(), length),
-            [this, self](boost::system::error_code ec, std::size_t /*length*/)
-            {
-                if (!ec)
-                {
-                    do_read();
-                }
-            });
-    }
 
     void close(const boost::system::error_code& oError)
     {
@@ -165,28 +158,7 @@ public:
 
 
 
-bool StartReading(TCPConnection & connection) noexcept
-{
-    try
-    {
-        connection.m_socket.async_read_some(boost::asio::buffer(connection.m_rxBuffer.data(), connection.RX_BUF_SIZE),
-            boost::bind(ReadOperationComplete,
-                boost::ref(connection),
-                placeholders::error,
-                placeholders::bytes_transferred
-            )
-        );
-    }
-    catch (...)
-    {
-        return false;
-    }
-
-    return true;
-}
-
-
-bool StartWriting(TCPConnection & connection) noexcept
+bool StartWriting(TcpConnection & connection) noexcept
 {
     try
     {
@@ -207,37 +179,10 @@ bool StartWriting(TCPConnection & connection) noexcept
 
 
 
-void ReadOperationComplete(TCPConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived)
-{
-    if (oError)
-    {
-        connection.close(oError);
-    }
-    else
-    {
-        if (nBytesReceived > 0)
-        {
-#if 0
-            if (m_fnReadComplete)
-            {
-                m_fnReadComplete(m_rxBuffer.data(), nBytesReceived);
-            }
-#endif
-
-            connection.m_rxBuffer.clear();
-            connection.m_rxBuffer.resize(connection.RX_BUF_SIZE);
-        }
-
-        if (!StartReading(connection))
-        {
-            //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
-        }
-    }    
-}
 
 
 
-void WriteOperationComplete(TCPConnection & connection, const boost::system::error_code& oError)
+void WriteOperationComplete(TcpConnection & connection, const boost::system::error_code& oError)
 {
     if (oError)
     {
@@ -283,21 +228,18 @@ static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 
 
 
-struct TCPServer_Private
+struct TcpServer_Private
 {
     io_service &           m_ioService;
     tcp::endpoint          m_endPoint;
     tcp::acceptor          m_acceptor;
 
-    std::shared_ptr<TCPConnection> m_connection;
+    TcpServer::ITcpHandler*  m_handler = nullptr;
 
-    // completion event handlers
-    TCPServer::fnReadComplete	    m_fnReadComplete = nullptr;
-    TCPServer::fnWriteComplete      m_fnWriteComplete = nullptr;
-    TCPServer::fnAcceptConnection   m_fnAcceptConnection = nullptr;
+    std::shared_ptr<TcpConnection> m_connection;
 
 
-    TCPServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
+    TcpServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
         :   m_ioService(System::IOService()),
             m_endPoint(createEndpoint(address, port)),
             m_acceptor(m_ioService, m_endPoint)
@@ -310,42 +252,19 @@ struct TCPServer_Private
 
     void startAccepting()
     {
-        //m_connection = std::shared_ptr<TCPConnection>(new TCPConnection( m_ioService, m_endPoint));
-        //m_acceptor.async_accept(m_connection->m_socket, boost::bind(&TCPServer_Private::onAccept, this, m_connection, placeholders::error));
-
         m_acceptor.async_accept(
             [this](boost::system::error_code ec, tcp::socket socket)
             {
                 if (!ec)
                 {
-                    std::make_shared<TCPConnection>(std::move(socket))->start();
+                    m_connection = std::make_shared<TcpConnection>(std::move(socket), m_handler);
+                    m_connection->start();
                 }
 
                 this->startAccepting();
             });
     }
 
-
-    void onAccept(std::shared_ptr<TCPConnection> connection, const boost::system::error_code& error)
-    {
-        if (!error)
-        {
-            if (connection != nullptr)
-            {
-                std::cout << "onAccept" << std::endl;
-                StartReading(*connection);
-            }
-        }
-        else
-        {
-            std::cout << error.what() << std::endl;
-        }
-
-        this->startAccepting();
-    }
-
-
- 
 
 
 
@@ -397,11 +316,11 @@ struct TCPServer_Private
 ///////////////////////////
 
 
-TCPServer::TCPServer(const std::string& address, uint16_t port, const std::string & sslCert)
+TcpServer::TcpServer(const std::string& address, uint16_t port, const std::string & sslCert)
 {
     try
     {
-        m_private = std::shared_ptr<TCPServer_Private>(new TCPServer_Private(address, port, sslCert));
+        m_private = std::shared_ptr<TcpServer_Private>(new TcpServer_Private(address, port, sslCert));
 
     }
     catch (...)
@@ -411,14 +330,14 @@ TCPServer::TCPServer(const std::string& address, uint16_t port, const std::strin
 }
 
 
-TCPServer::TCPServer(const TCPServer& rhs)
+TcpServer::TcpServer(const TcpServer& rhs)
     : m_private(rhs.m_private)
 {
 }
 
 
 
-TCPServer::~TCPServer() noexcept
+TcpServer::~TcpServer() noexcept
 {
     try
     {
@@ -430,7 +349,7 @@ TCPServer::~TCPServer() noexcept
     }
 }
 
-TCPServer& TCPServer::operator=(const TCPServer& rhs)
+TcpServer& TcpServer::operator=(const TcpServer& rhs)
 {
     if (this != &rhs)
     {
@@ -440,19 +359,17 @@ TCPServer& TCPServer::operator=(const TCPServer& rhs)
 }
 
 
-void TCPServer::setCallbacks(TCPServer::fnAcceptConnection onAccept, TCPServer::fnReadComplete onReadHandler, TCPServer::fnWriteComplete onWriteHandler)
+void TcpServer::setHandler(ITcpHandler* const handler)
 {
-    m_private->m_fnReadComplete = onReadHandler;
-    m_private->m_fnWriteComplete = onWriteHandler;
-    m_private->m_fnAcceptConnection = onAccept;
+    m_private->m_handler = handler;
 }
 
 
-bool TCPServer::send(const char cMsg) noexcept
+bool TcpServer::send(const char cMsg) noexcept
 {
 	try
 	{
-		m_private->m_ioService.post(boost::bind(&TCPServer_Private::sendChar, m_private.get(), cMsg));
+		m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendChar, m_private.get(), cMsg));
 	}
 	catch (...)
 	{
@@ -463,11 +380,11 @@ bool TCPServer::send(const char cMsg) noexcept
 }
 
 
-bool TCPServer::send(const std::string& text)
+bool TcpServer::send(const std::string& text)
 {
     try
     {
-        m_private->m_ioService.post(boost::bind(&TCPServer_Private::sendText,
+        m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendText,
             m_private.get(),
             text));
     }
@@ -481,11 +398,11 @@ bool TCPServer::send(const std::string& text)
 
 
 
-bool TCPServer::send(const uint8_t* const data, size_t length)
+bool TcpServer::send(const uint8_t* const data, size_t length)
 {
     try
     {
-        m_private->m_ioService.post(boost::bind(&TCPServer_Private::sendBinary,
+        m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendBinary,
             m_private.get(),
             data,
             length));
@@ -499,11 +416,11 @@ bool TCPServer::send(const uint8_t* const data, size_t length)
 }
 
 
-bool TCPServer::close() noexcept
+bool TcpServer::close() noexcept
 {
 	try
 	{
-		m_private->m_ioService.post(boost::bind(&TCPServer_Private::close,
+		m_private->m_ioService.post(boost::bind(&TcpServer_Private::close,
 			m_private.get(),
 			boost::system::error_code()));
 	}
@@ -516,7 +433,7 @@ bool TCPServer::close() noexcept
 }
 
 
-bool TCPServer::isActive() const
+bool TcpServer::isActive() const
 {
 	return m_private->m_connection != nullptr;
 }

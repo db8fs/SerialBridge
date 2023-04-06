@@ -19,8 +19,17 @@ class SerialPort
 
 public:
 
-	typedef void (*fnReadComplete)(const char* msg, size_t length);
-	typedef void (*fnWriteComplete)(const char msg);
+	class ISerialHandler
+	{
+	public:
+		virtual ~ISerialHandler() = 0 {}
+
+		virtual void onSerialReadComplete(const char* msg, size_t length) = 0;
+		virtual void onSerialWriteComplete(const char* msg, size_t length) = 0;
+		//virtual void onSerialClientAccept() = 0;
+		//virtual void onSerialClientDisconnect() = 0;
+	};
+
 
 	/** possible handshake settings for serial connections */
 	enum class eFlowControl : uint8_t
@@ -39,7 +48,7 @@ public:
 	SerialPort& operator=(const SerialPort&);
 
 	/** defines asynchronous read or write completion handlers */
-	void setCallbacks(SerialPort::fnReadComplete onReadHandler, SerialPort::fnWriteComplete onWriteHandler);
+	void setHandler(ISerialHandler* const handler);
 
 	/** transmit single character */
 	bool send(const char cMsg) noexcept;
