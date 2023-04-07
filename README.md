@@ -38,23 +38,38 @@ a given USB serialport interface (telnet-like). Other Wifi participants may conn
 socket and operate on it, just as they would with a traditional serial port - except that 
 the communication settings (device (COM9), baudrate (115200)) will be applied by
 the serial bridge server.
+ #### Can I put this on Arduino?
 
-#### Can I put this on Arduino? 
+Nope, most likely not. Let's make it clear: let's say, you want to use an USB
+serial interface and want to stream its data via network. For doing so, your
+Arduino would have to be the USB host, speaking the USB protocol to the USB
+serialport client (usb-host). Then you would also need a specific driver for the
+attached serialport device (usb-serial) and a Wifi connection via ESP32.
 
-Nope, most likely not. Let's make it clear: let's say, you want to use an USB serial interface
-and want to stream its data via network. For doing so, your Arduino would have to be the USB host, speaking the
-USB protocol to the USB serialport client (usb-host). Then you would also need a specific driver
-for the attached serialport device (usb-serial) and a Wifi connection via ESP32.
-
-It's therefore way easier to simply use a RaspberryPi Zero W with an Raspbian image (or custom buildroot)
-and use the C++ project below.
+It's therefore way easier to simply use a RaspberryPi Zero W with an Raspbian
+image (or custom buildroot) and use the C++ project below.
 
 #### Did I get it right? I need a RaspberryPi with USB OTG enabled and usb-serial driver?
 
-Exactly, that's how it works. You attach your USB-UART to your Raspberry, start the SerialBridge server 
-and you then may connect via WiFi or Ethernet to the server. 
+Exactly, that's how it works. You attach your USB-UART to your Raspberry, start
+the SerialBridge server and you then may connect via WiFi or Ethernet to the
+server.
 
-You can then access the USB-UART from the network client computer, and receive or transmit data to it.
+You can then access the USB-UART from the network client computer, and receive
+or transmit data to it.
+
+
+#### What about the integrated serial port of the RaspberryPi?
+
+Sometimes it may be the case, that you have some fancy hat for your Pi
+(extension board on top of the GPIO pin header), which communicates via UART to
+the Raspberry. It may be interesting to access this HAT board via network and
+configure it. The integrated RPi UART should appear as /dev/ttyAMA0 in the
+Raspbian as described [here](https://pinout.xyz/pinout/uart).
+
+
+Same thing as USB-UART - just pass the correct device to the SerialBridge software. 
+
 
 #### Are there ways to simulate a physical COM interface for the network client?
 
