@@ -11,9 +11,12 @@
 	- asio
 	- system
 	- program_options
+- CMake
+- Compiler suite (GCC, Clang, MSVC)
 
 
 #### Start build
+
 	cd <path/to/this_repo>
 	cd software
 	mkdir build
