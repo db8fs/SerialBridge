@@ -38,9 +38,11 @@
 	Print current config:
 	<BUILDDIR>$ ./SerialBridge --config
 
-##### Example usage
+##### Example usages
 
-1. Connect USB-UART to bridging computer (could be also RaspberryPi)
+###### Bridging a Waterrower S4 rowing computer into WiFi network
+
+1. Connect USB-UART to bridging computer (could be also RaspberryPi 3 or 0W)
 ![Forwarding USB-UART via Laptop into Wifi network](/doc/tutorial/usage.jpg)
 
 2. Start the SerialBridge server for the given USB-UART
