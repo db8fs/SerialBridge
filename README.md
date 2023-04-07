@@ -2,7 +2,7 @@
 
 ## Introduction
 
-### What's serial communication?
+#### What's serial communication?
 
 Serial ports have played a significant role in the computer industry over the
 years, although their importance has diminished in recent times with the rise of
@@ -17,7 +17,7 @@ In the past, serial ports were commonly used to connect devices such as
 printers, scanners, and modems to computers. They were also used for
 communication between computers, such as for file transfer and remote access.
 
-## What is a serial bridge?
+#### What is a serial bridge?
 
 A serial to WiFi bridge, also known as a serial to wireless converter or a
 serial to WiFi adapter, is a device that allows serial devices to communicate
@@ -31,7 +31,7 @@ to a WiFi network. This allows the device to transmit data wirelessly,
 eliminating the need for a physical connection between the device and a computer
 or other controller.
 
-## What does this this project try to achieve?
+#### What does this this project try to achieve?
 
 This project contains a C++ application that will create a network socket for
 a given USB serialport interface (telnet-like). Other Wifi participants may connect to this
@@ -39,7 +39,7 @@ socket and operate on it, just as they would with a traditional serial port - ex
 the communication settings (device (COM9), baudrate (115200)) will be applied by
 the serial bridge server.
 
-## Can I put this on Arduino? 
+#### Can I put this on Arduino? 
 
 Nope, most likely not. Let's make it clear: let's say, you want to use an USB serial interface
 and want to stream its data via network. For doing so, your Arduino would have to be the USB host, speaking the
@@ -49,37 +49,34 @@ for the attached serialport device (usb-serial) and a Wifi connection via ESP32.
 It's therefore way easier to simply use a RaspberryPi Zero W with an Raspbian image (or custom buildroot)
 and use the C++ project below.
 
-## Did I get it right? I need a RaspberryPi with USB OTG enabled and usb-serial driver?
+#### Did I get it right? I need a RaspberryPi with USB OTG enabled and usb-serial driver?
 
 Exactly, that's how it works. You attach your USB-UART to your Raspberry, start the SerialBridge server 
 and you then may connect via WiFi or Ethernet to the server. 
 
-You than can access the USB-UART from the network client computer, and receive or transmit data to it.
+You can then access the USB-UART from the network client computer, and receive or transmit data to it.
 
-
-## Are there ways to simulate a physical COM interface for the network client?
+#### Are there ways to simulate a physical COM interface for the network client?
 
 Windows or Unix software usually access serial ports via DeviceIO - for the OS
 it is like accessing a specific file in the filesystem.
 
 For being able to connect to the serial server (the "SerialBridge") via network,
-you will to have an emulation layer, most likely a virtual driver, that will
-fake an COM port on Windows OS. For the client application it will look, as if
-the device is physically attached to the computer.
+you will need to have an emulation layer, most likely a virtual interface driver, 
+that will fake an COM port on your Windows OS. For the client application it will 
+then look, as if the device is physically attached to the computer.
 
 For Windows there are projects available, that can provide a kernel driver for
 these purposes. For further details, just have a look at
 [Com0Com](https://com0com.sourceforge.net/).
 
-
-## Isn't this possible using linux and minicom or screen?
+#### Isn't this possible using linux and minicom or screen?
 
 Sure, feel free to do so and share it! This approach here tries to be customizable for 
 your own needs - and you may do so, but be warned, that changes on the software must 
 be applied under GPLv3, which shouldn't be a bigger problem these days.
 
-
-## What's the License for SerialBridge?
+#### What's the License for SerialBridge?
 
 As already mentioned above, the source code is licensed under the GNU GPLv3 as
 defined [here](https://www.gnu.org/licenses/gpl-3.0.html).
@@ -92,8 +89,7 @@ defined [here](https://www.gnu.org/licenses/gpl-3.0.html).
 For getting started, simply install your favorite Raspbian image onto the SDCard
 and get it running to connect to your WiFi or Ethernet network. This process of
 how to get there is very well documented at
-[RaspberryPi.com](https://www.raspberrypi.com/documentation/computers/getting-
-started.html#setting-up-your-raspberry-pi).
+[RaspberryPi.com](https://www.raspberrypi.com/documentation/computers/getting-started.html#setting-up-your-raspberry-pi).
 
 When your network is running, simply install cmake and libboost-dev using the
 apt package system and build the software as described below.
