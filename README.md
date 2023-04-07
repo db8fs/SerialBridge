@@ -37,5 +37,17 @@
 
 ##### Example usage
 
+1. Connect USB-UART to bridging computer (could be also RaspberryPi)
 ![Forwarding USB-UART via Laptop into Wifi network](/doc/tutorial/usage.jpg)
 
+2. Start the SerialBridge server for the given USB-UART
+![HyperTerminal TCP/IP Connect Dialog](/doc/tutorial/server-start.jpg)
+	
+3. Connect your network client to the server
+![HyperTerminal TCP/IP Connect Dialog](/doc/tutorial/hypertrm-connect-dlg.png)
+
+4. Get the welcome message of the SerialBridge server
+![HyperTerminal acknowledged connection to SerialBridge](/doc/tutorial/hypertrm-connected.png)
+
+5. Ready to go: Transceive data!
+![HyperTerminal receiving data from the UART via network](/doc/tutorial/hypertrm-receiving-data.png)
