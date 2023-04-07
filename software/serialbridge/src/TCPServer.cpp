@@ -46,9 +46,9 @@ public:
 
     tcp::socket            m_socket;
 
-    TcpServer::ITcpHandler* const &   m_handler;
+    TcpServer::ITcpHandler* &   m_handler;
 
-    TcpConnection(tcp::socket socket, TcpServer::ITcpHandler* const & handler)
+    TcpConnection(tcp::socket socket, TcpServer::ITcpHandler* & handler)
         : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -140,20 +140,6 @@ public:
     }
 
 
-    void sendBinary(const uint8_t* const msg, size_t length)
-    {
-        if (nullptr != msg)
-        {
-            bool bWriteInProgress = !m_txBuffer.empty();
-
-            std::copy(msg, msg + length, std::back_inserter(m_txBuffer));
-
-            if (!bWriteInProgress)
-            {
-                StartWriting(*this);
-            }
-        }
-    }
 };
 
 
@@ -285,16 +271,6 @@ struct TcpServer_Private
         }
     }
 
-    void sendBinary(const uint8_t* const msg, size_t length)
-    {
-        if (nullptr != m_connection)
-        {
-            if (nullptr != msg)
-            {
-                m_connection->sendBinary(msg, length);
-            }
-        }
-    }
 
     void close(boost::system::error_code ec)
     {
@@ -398,22 +374,6 @@ bool TcpServer::send(const std::string& text)
 
 
 
-bool TcpServer::send(const uint8_t* const data, size_t length)
-{
-    try
-    {
-        m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendBinary,
-            m_private.get(),
-            data,
-            length));
-    }
-    catch (...)
-    {
-        return false;
-    }
-
-    return true;
-}
 
 
 bool TcpServer::close() noexcept

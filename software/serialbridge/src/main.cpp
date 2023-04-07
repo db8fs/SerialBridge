@@ -44,7 +44,7 @@ public:
 	{
 		if (connected)
 		{
-			tcpServer.send((uint8_t*)msg, length);
+			tcpServer.send(std::string(msg, msg + length));
 		}
 	}
 
