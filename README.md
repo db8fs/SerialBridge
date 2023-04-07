@@ -62,6 +62,12 @@ these purposes. For further details, just have a look at
 [Com0Com](https://com0com.sourceforge.net/).
 
 
+## What's the License for SerialBridge?
+
+As already mentioned above, the source code is licensed under the GNU GPLv3 as
+defined [here](https://www.gnu.org/licenses/gpl-3.0.html).
+
+
 ## System
 
 ### RaspberryPi/Raspbian
@@ -86,25 +92,37 @@ apt package system and build the software as described below.
 	- system -
 	- program_options 
 - CMake 
+- Git
 - Compiler suite (GCC, Clang, MSVC)
 
 
 #### Start build
 
-	cd <path/to/this_repo> cd software mkdir build cd build cmake ../serialbridge
-	make
+For Raspian you may want to start building using the following steps:
 
+	$ git clone https://github.com/db8fs/SerialBridge.git
+	$ cd SerialBridge/software 
+	$ mkdir build 
+	$ cd build 
+	$ cmake ../serialbridge
+	$ make
+
+This should usually run fine, as long as the software dependencies for building are matched. 
+The result an existing 'SerialBridge' binary in your build folder.
 
 ### Running SerialBridge
 
-#### Configuring the serial port
+#### Configuring the serial port and running the server
 
-	USB-UART@96008N1 being mapped to localhost:25 <BUILDDIR>$ ./SerialBridge -d
-	/dev/ttyUSB0 -b 9600 -p 25
+	USB-UART@96008N1 being mapped to localhost:25 
+	  <BUILDDIR>$ ./SerialBridge -d /dev/ttyUSB0 -b 9600 -p 25
 
-	Print options: <BUILDDIR>$ ./SerialBridge --help
+	Print options: 
+	  <BUILDDIR>$ ./SerialBridge --help
 
-	Print current config: <BUILDDIR>$ ./SerialBridge --config
+	Print current config: 
+	  <BUILDDIR>$ ./SerialBridge --config
+
 
 ##### Example usages
 
