@@ -47,15 +47,33 @@ your own needs - and you may do so, but be warned, that changes on the software 
 be applied under GPLv3, which shouldn't be a bigger problem these days.
 
 
+## Are there ways to simulate a physical COM interface for the network client?
+
+Windows or Unix software usually access serial ports via DeviceIO - for the OS
+it is like accessing a specific file in the filesystem.
+
+For being able to connect to the serial server (the "SerialBridge") via network,
+you will to have an emulation layer, most likely a virtual driver, that will
+fake an COM port on Windows OS. For the client application it will look, as if
+the device is physically attached to the computer.
+
+For Windows there are projects available, that can provide a kernel driver for
+these purposes. For further details, just have a look at
+[Com0Com](https://com0com.sourceforge.net/).
+
+
 ## System
 
 ### RaspberryPi/Raspbian
 
-For getting started, simply install your favorite Raspbian image onto the SDCard and get it running to connect to your WiFi or Ethernet network.
-This process of how to get there is very well documented at [RaspberryPi.com](https://www.raspberrypi.com/documentation/computers/getting-started.html#setting-up-your-raspberry-pi).
+For getting started, simply install your favorite Raspbian image onto the SDCard
+and get it running to connect to your WiFi or Ethernet network. This process of
+how to get there is very well documented at
+[RaspberryPi.com](https://www.raspberrypi.com/documentation/computers/getting-
+started.html#setting-up-your-raspberry-pi).
 
-When your network is running, simply install cmake and libboost-dev using the apt package system and build 
-the software as described below.
+When your network is running, simply install cmake and libboost-dev using the
+apt package system and build the software as described below.
 
 
 ## Software
