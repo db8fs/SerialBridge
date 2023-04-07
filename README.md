@@ -34,17 +34,27 @@ or other controller.
 ## What does this this project try to achieve?
 
 This project contains a C++ application that will create a network socket for
-a given serialport interface (telnet-like). Other Wifi participants may connect to this
+a given USB serialport interface (telnet-like). Other Wifi participants may connect to this
 socket and operate on it, just as they would with a traditional serial port - except that 
 the communication settings (device (COM9), baudrate (115200)) will be applied by
 the serial bridge server.
 
+## Can I put this on Arduino? 
 
-## Isn't it possible to do the same using linux and minicom or screen?
+Nope, most likely not. Let's make it clear: let's say, you want to use an USB serial interface
+and want to stream its data via network. For doing so, your Arduino would have to be the USB host, speaking the
+USB protocol to the USB serialport client (usb-host). Then you would also need a specific driver
+for the attached serialport device (usb-serial) and a Wifi connection via ESP32.
 
-Sure, feel free to do so and share it! This approach here tries to be customizable for 
-your own needs - and you may do so, but be warned, that changes on the software must 
-be applied under GPLv3, which shouldn't be a bigger problem these days.
+It's therefore way easier to simply use a RaspberryPi Zero W with an Raspbian image (or custom buildroot)
+and use the C++ project below.
+
+## Did I get it right? I need a RaspberryPi with USB OTG enabled and usb-serial driver?
+
+Exactly, that's how it works. You attach your USB-UART to your Raspberry, start the SerialBridge server 
+and you then may connect via WiFi or Ethernet to the server. 
+
+You than can access the USB-UART from the network client computer, and receive or transmit data to it.
 
 
 ## Are there ways to simulate a physical COM interface for the network client?
@@ -60,6 +70,13 @@ the device is physically attached to the computer.
 For Windows there are projects available, that can provide a kernel driver for
 these purposes. For further details, just have a look at
 [Com0Com](https://com0com.sourceforge.net/).
+
+
+## Isn't this possible using linux and minicom or screen?
+
+Sure, feel free to do so and share it! This approach here tries to be customizable for 
+your own needs - and you may do so, but be warned, that changes on the software must 
+be applied under GPLv3, which shouldn't be a bigger problem these days.
 
 
 ## What's the License for SerialBridge?
