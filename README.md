@@ -33,11 +33,13 @@ or other controller.
 
 #### What does this this project try to achieve?
 
-This project contains a C++ application that will create a network socket for
-a given USB serialport interface (telnet-like). Other Wifi participants may connect to this
-socket and operate on it, just as they would with a traditional serial port - except that 
-the communication settings (device (COM9), baudrate (115200)) will be applied by
+This project contains a C++ application that will create a network socket for a
+given USB serialport interface (telnet-like). Other Wifi participants may
+connect to this socket and operate on it, just as they would with a traditional
+serial port - except that the communication settings (device (COM9), baudrate
+(115200)) will be applied by
 the serial bridge server.
+
  #### Can I put this on Arduino?
 
 Nope, most likely not. Let's make it clear: let's say, you want to use an USB
@@ -90,6 +92,13 @@ these purposes. For further details, just have a look at
 Sure, feel free to do so and share it! This approach here tries to be customizable for 
 your own needs - and you may do so, but be warned, that changes on the software must 
 be applied under GPLv3, which shouldn't be a bigger problem these days.
+
+
+#### Why not Python?
+
+C++ is a object-oriented and nice language with good libraries. ;)
+So, why not - it's not less extensible than Python.
+
 
 #### What's the License for SerialBridge?
 
