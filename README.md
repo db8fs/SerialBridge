@@ -35,7 +35,7 @@
 	Print current config:
 	<BUILDDIR>$ ./SerialBridge --config
 
-##### Example 
+##### Example usage
 
-
+![Forwarding USB-UART via Laptop into Wifi network](/doc/tutorial/usage.jpg)
 
