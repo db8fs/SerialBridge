@@ -18,7 +18,7 @@ endif(WIN32)
     set( Boost_USE_MULTITHREADED      ON)
     set( Boost_USE_STATIC_RUNTIME     OFF) # MSVCRT runtime dll or static
 
-    find_package(Boost 1.60.0 COMPONENTS program_options system thread)
+    find_package(Boost 1.60.0 COMPONENTS filesystem program_options system thread serialization)
 
 endfunction()
 

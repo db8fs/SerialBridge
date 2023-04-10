@@ -8,6 +8,8 @@
 
 #include <string>
 #include <memory>
+#include <thread>
+#include <chrono>
 
 #include "System.h"
 #include "SerialPort.h"
@@ -19,7 +21,7 @@
 #include <boost/asio.hpp>
 #include <boost/asio/serial_port.hpp>
 #include <boost/date_time/posix_time/posix_time_types.hpp>
-
+#include <boost/filesystem.hpp>
 
 
 using namespace boost::asio;
@@ -32,6 +34,18 @@ static std::map<enum SerialPort::eFlowControl, serial_port_base::flow_control> c
     std::pair<enum SerialPort::eFlowControl, serial_port_base::flow_control>(SerialPort::eFlowControl::Software, serial_port_base::flow_control::software)
 };
 
+struct SerialPort_Params
+{
+    std::string  device;
+    uint32_t     baudrate;
+    enum SerialPort::eFlowControl flowControl;
+    SerialPort::ISerialHandler* handler = nullptr;
+
+    SerialPort_Params(const std::string& device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
+        : device(device), baudrate(baudrate), flowControl(flowControl)
+    {}
+
+};
 
 struct SerialPort_Private
 {
@@ -45,16 +59,17 @@ struct SerialPort_Private
     std::deque<char>       m_txBuffer;
 
     // completion event handlers
-    SerialPort::ISerialHandler* m_handler = nullptr;
+    SerialPort::ISerialHandler* & m_handler;
 
 
-    SerialPort_Private(const std::string & device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
-        :   m_ioService(System::IOService()),
-            m_serialPort(m_ioService, device)
+    SerialPort_Private(SerialPort_Params & params)
+        : m_ioService(System::IOService()),
+          m_serialPort(m_ioService, params.device),
+          m_handler(params.handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
-        m_serialPort.set_option(serial_port_base::baud_rate(baudrate));
-        m_serialPort.set_option( convertFlowControl[flowControl]);
+        m_serialPort.set_option(serial_port_base::baud_rate(params.baudrate));
+        m_serialPort.set_option( convertFlowControl[params.flowControl]);
     }
 
 
@@ -216,36 +231,44 @@ struct SerialPort_Private
 };
 
 
+///////////////////////////
 
+static bool isSerialPortPresent(const std::string& deviceName)
+{
+
+#ifdef WIN32
+    {
+        constexpr size_t MAX_BUF_LEN = 1000;
+        char targetPath[MAX_BUF_LEN+1] = { 0 };
+
+        DWORD result(QueryDosDeviceA(deviceName.c_str(), &targetPath[0], MAX_BUF_LEN));
+
+        return result > 0;
+    }
+#else
+    {
+        using namespace boost;
+        return (!filesystem::exists(deviceName) ||
+            !filesystem::is_regular_file(deviceName));
+    }
+#endif
+}
 
 ///////////////////////////
 
 
 SerialPort::SerialPort(const std::string& device, uint32_t baudRate, enum SerialPort::eFlowControl flowControl)
+    :   m_params(new SerialPort_Params(device, baudRate, flowControl)),
+        m_private(nullptr)
 {
-    try
-    {
-        m_private = std::shared_ptr<SerialPort_Private>(new SerialPort_Private(device, baudRate, flowControl));
-
-        if (m_private->m_serialPort.is_open())
-        {
-            if (!m_private->StartReading())
-            {
-                throw std::exception();
-            }
-        }
-    }
-    catch (...)
-    {
-        throw "Failed to open serial port!";
-    }
 }
+
 
 SerialPort::SerialPort(const SerialPort& rhs)
-    : m_private(rhs.m_private)
+    :   m_params(rhs.m_params),
+        m_private(rhs.m_private)
 {
 }
-
 
 
 SerialPort::~SerialPort() noexcept
@@ -269,11 +292,46 @@ SerialPort& SerialPort::operator=(const SerialPort& rhs)
     return *this;
 }
 
+void SerialPort::awaitConnection(uint16_t waitMs)
+{
+    if (isSerialPortPresent(m_params->device))
+    {
+        try
+        {
+            m_private = std::shared_ptr<SerialPort_Private>(new SerialPort_Private(*m_params));
+        }
+        catch (...)
+        {
+            throw "Failed to open serial port!";
+        }
+
+        if (nullptr != m_params->handler)
+        {
+            m_params->handler->onSerialConnected();
+        }
+
+        std::cout << "Serial port connected" << std::endl;
+    }
+    else
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(waitMs));
+    }
+}
+
+bool SerialPort::start()
+{
+    if (m_private->m_serialPort.is_open())
+    {
+        return m_private->StartReading();
+    }
+
+    return false;
+}
 
 
 void SerialPort::setHandler(ISerialHandler* const handler)
 {
-    m_private->m_handler = handler;
+    m_params->handler = handler;
 }
 
 

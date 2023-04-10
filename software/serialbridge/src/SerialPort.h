@@ -15,6 +15,7 @@
 /** */
 class SerialPort
 {
+	std::shared_ptr<struct SerialPort_Params>  m_params;
 	std::shared_ptr<struct SerialPort_Private> m_private;
 
 public:
@@ -24,10 +25,9 @@ public:
 	public:
 		virtual ~ISerialHandler() {}
 
+		virtual void onSerialConnected() = 0;
 		virtual void onSerialReadComplete(const char* msg, size_t length) = 0;
 		virtual void onSerialWriteComplete(const char* msg, size_t length) = 0;
-		//virtual void onSerialClientAccept() = 0;
-		//virtual void onSerialClientDisconnect() = 0;
 	};
 
 
@@ -46,6 +46,12 @@ public:
 	~SerialPort() noexcept;
 
 	SerialPort& operator=(const SerialPort&);
+
+	/** waits for the given timespan (ms) for availability of the port */
+	void awaitConnection(uint16_t waitMs);
+
+	/** starts the communication */
+	bool start();
 
 	/** defines asynchronous read or write completion handlers */
 	void setHandler(ISerialHandler* const handler);

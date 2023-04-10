@@ -17,8 +17,8 @@
 #include "System.h"
 #include "TCPServer.h"
 
-constexpr char* const HelloString = "SerialBridge\n\r";
-
+const char* HelloString = "SerialBridge\n\r";
+const char* ReadyString = "SerialBrigde ready\n\r";
 
 /* creates a tcp server socket for bridging serial UART data into a tcp network */
 class SerialBridge :	private SerialPort::ISerialHandler,
@@ -28,7 +28,10 @@ class SerialBridge :	private SerialPort::ISerialHandler,
 	SerialPort serialPort;
 	TcpServer  tcpServer;
 
-	bool connected = false;
+	bool serialConnected = false;
+	bool tcpConnected = false;
+
+	bool readySent = false;
 
 public:
 	SerialBridge(const Arguments& options)
@@ -40,39 +43,75 @@ public:
 		tcpServer.setHandler(this);
 	}
 
-	void onSerialReadComplete(const char* msg, size_t length)
+	bool isSerialAvailable() const
 	{
-		if (connected)
+		return serialConnected;
+	}
+
+	void waitForSerial(uint16_t waitDelayMs)
+	{
+		serialPort.awaitConnection(waitDelayMs);
+	}
+
+	void start()
+	{
+		serialPort.start();
+	}
+
+	void checkReadyness()
+	{
+		if (tcpConnected && serialConnected)
+		{
+			if (!readySent)
+			{
+				tcpServer.send(ReadyString);
+				readySent = true;
+			}
+		}
+	}
+
+	void onSerialConnected() final
+	{
+		serialConnected = true;
+		checkReadyness();
+	}
+
+	void onSerialReadComplete(const char* msg, size_t length) final
+	{
+		if (tcpConnected)
 		{
 			tcpServer.send(std::string(msg, msg + length));
 		}
 	}
 
-	void onTcpReadComplete(const char* msg, size_t length)
+	void onTcpReadComplete(const char* msg, size_t length) final
 	{
-		if (connected)
+		if (tcpConnected)
 		{
 			serialPort.send((uint8_t*)msg, length);
 		}
 	}
 
 
-	void onSerialWriteComplete(const char* msg, size_t length)
+	void onSerialWriteComplete(const char* msg, size_t length) final
 	{
 	}
 	
 
-	void onTcpClientAccept()
+	void onTcpClientAccept() final
 	{
 		tcpServer.send(HelloString);
-		connected = true;
+		tcpConnected = true;
 
 		std::cout << "Client Connect" << std::endl;
+
+		checkReadyness();
 	}
 
-	void onTcpClientDisconnect()
+	void onTcpClientDisconnect() final
 	{
-		connected = false;
+		tcpConnected = false;
+		readySent = false;
 
 		std::cout << "Client Disconnect" << std::endl;
 	}
@@ -90,6 +129,13 @@ int main(int argc, char** argv)
 		try
 		{
 			SerialBridge bridge(options);
+
+			while (!bridge.isSerialAvailable())
+			{
+				bridge.waitForSerial(4000);
+			}
+
+			bridge.start();
 
 			System::run();
 		}
