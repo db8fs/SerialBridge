@@ -1,5 +1,12 @@
 # SerialBridge
 
+## About
+- (c) 2023 Falk Schilling (db8fs), licensed under GPLv3
+
+## Latest News
+- Version 0.9 released
+- https://github.com/db8fs/SerialBridge.git
+
 ## Introduction
 
 #### What's serial communication?
