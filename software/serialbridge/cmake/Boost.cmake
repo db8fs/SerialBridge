@@ -13,7 +13,7 @@ function( checkBoost )
     set( Boost_USE_MULTITHREADED      ON)
     set( Boost_USE_STATIC_RUNTIME     OFF) # MSVCRT runtime dll or static
 
-    find_package(Boost 1.60.0 COMPONENTS program_options system)
+    find_package(Boost 1.60.0 COMPONENTS program_options system thread)
 
 endfunction()
 

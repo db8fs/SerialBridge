@@ -100,11 +100,6 @@ int main(int argc, char** argv)
 
 			std::cout << std::endl << options;
 		}
-		catch (boost::system::system_error& ex)
-		{
-			std::cout << ex.what() << std::endl;
-			std::cout << ">>> Aborting...";
-		}
 		catch (...)
 		{
 			std::cout << ">>> Aborting...";
