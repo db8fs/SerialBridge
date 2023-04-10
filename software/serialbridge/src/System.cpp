@@ -9,6 +9,8 @@
 #include "System.h"
 
 
+#include <boost/asio/io_service.hpp>
+
 const std::string System::ALL_INTERFACES = "all interfaces";
 
 struct System_Private
