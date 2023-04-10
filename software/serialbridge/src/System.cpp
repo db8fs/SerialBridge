@@ -8,7 +8,6 @@
 
 #include "System.h"
 
-#include <boost/asio.hpp>
 
 const std::string System::ALL_INTERFACES = "all interfaces";
 

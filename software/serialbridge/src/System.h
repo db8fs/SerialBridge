@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace boost { namespace asio { class io_context; } }
+#include <boost/asio.hpp>
 
 
 /** singleton access to system services or cross-cutting stuff (maybe logging) */
@@ -21,7 +21,7 @@ class System
 public:
 
 	/** gets the fundamental asio service for running all IO requests */
-	static boost::asio::io_context & IOService();
+	static boost::asio::io_service & IOService();
 
 	/** runs the io service */
 	static void run();
