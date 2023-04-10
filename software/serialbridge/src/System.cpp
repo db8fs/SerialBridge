@@ -13,7 +13,7 @@ const std::string System::ALL_INTERFACES = "all interfaces";
 
 struct System_Private
 {
-	boost::asio::io_context ioService;
+	boost::asio::io_service ioService;
 } 
 System::m_private;
 
