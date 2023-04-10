@@ -248,8 +248,7 @@ static bool isSerialPortPresent(const std::string& deviceName)
 #else
     {
         using namespace boost;
-        return (!filesystem::exists(deviceName) ||
-            !filesystem::is_regular_file(deviceName));
+        return (filesystem::exists(deviceName) && filesystem::is_regular_file(deviceName));
     }
 #endif
 }
