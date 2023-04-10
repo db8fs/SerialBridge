@@ -21,7 +21,7 @@ System::m_private;
 
 
 
-boost::asio::io_context& System::IOService()
+boost::asio::io_service & System::IOService()
 {
 	return m_private.ioService;
 }
