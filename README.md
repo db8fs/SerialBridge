@@ -1,5 +1,9 @@
 # SerialBridge
 
+## Latest News
+- Version 0.9 released
+
+
 ## Introduction
 
 #### What's serial communication?
