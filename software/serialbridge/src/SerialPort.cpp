@@ -37,8 +37,8 @@ static std::map<enum SerialPort::eFlowControl, serial_port_base::flow_control> c
 struct SerialPort_Params
 {
     std::string  device;
-    uint32_t     baudrate;
-    enum SerialPort::eFlowControl flowControl;
+    uint32_t     baudrate = 115200;
+    enum SerialPort::eFlowControl flowControl = SerialPort::eFlowControl::None;
     SerialPort::ISerialHandler* handler = nullptr;
 
     SerialPort_Params(const std::string& device, uint32_t baudrate, enum SerialPort::eFlowControl flowControl)
@@ -140,7 +140,6 @@ struct SerialPort_Private
                 //ExecuteCloseOperation(oError); //< todo: not sure if still necessary
             }
         }
-        
     }
 
 
@@ -248,7 +247,7 @@ static bool isSerialPortPresent(const std::string& deviceName)
 #else
     {
         using namespace boost;
-        return (filesystem::exists(deviceName) && filesystem::is_regular_file(deviceName));
+        return filesystem::exists(deviceName);
     }
 #endif
 }
@@ -276,6 +275,7 @@ SerialPort::~SerialPort() noexcept
     {
         this->close();
         m_private.reset();
+	m_params.reset();
     }
     catch (...)
     {
@@ -287,41 +287,48 @@ SerialPort& SerialPort::operator=(const SerialPort& rhs)
     if (this != &rhs)
     {
         this->m_private = rhs.m_private;
+	this->m_params = rhs.m_params;
     }
     return *this;
 }
 
 void SerialPort::awaitConnection(uint16_t waitMs)
 {
-    if (isSerialPortPresent(m_params->device))
+    if (nullptr != m_params)
     {
-        try
+        if (isSerialPortPresent(m_params->device))
         {
-            m_private = std::shared_ptr<SerialPort_Private>(new SerialPort_Private(*m_params));
-        }
-        catch (...)
-        {
-            throw "Failed to open serial port!";
-        }
+            try
+            {
+                m_private = std::shared_ptr<SerialPort_Private>(new SerialPort_Private(*m_params));
+            }
+            catch (...)
+            {
+                throw "Failed to open serial port!";
+            }
 
-        if (nullptr != m_params->handler)
-        {
-            m_params->handler->onSerialConnected();
-        }
+            if (nullptr != m_params->handler)
+            {
+                m_params->handler->onSerialConnected();
+            }
 
-        std::cout << "Serial port connected" << std::endl;
-    }
-    else
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(waitMs));
+            std::cout << "Serial port connected" << std::endl;
+        }
+        else
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(waitMs));
+        }
     }
 }
 
 bool SerialPort::start()
 {
-    if (m_private->m_serialPort.is_open())
+    if (nullptr != m_private)
     {
-        return m_private->StartReading();
+        if (m_private->m_serialPort.is_open())
+        {
+            return m_private->StartReading();
+        }
     }
 
     return false;
@@ -330,7 +337,10 @@ bool SerialPort::start()
 
 void SerialPort::setHandler(ISerialHandler* const handler)
 {
-    m_params->handler = handler;
+    if (nullptr != m_params)
+    {
+        m_params->handler = handler;
+    }
 }
 
 
@@ -338,14 +348,17 @@ bool SerialPort::send(const char cMsg) noexcept
 {
 	try
 	{
-		m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendChar, m_private.get(), cMsg));
+                if (nullptr != m_private)
+                {
+		    m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendChar, m_private.get(), cMsg));
+                    return true;
+                }
 	}
 	catch (...)
 	{
-		return false;
 	}
 
-	return true;
+	return false;
 }
 
 
@@ -353,16 +366,19 @@ bool SerialPort::send(const std::string& text)
 {
     try
     {
-        m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendText,
-            m_private.get(),
-            text));
+        if (nullptr != m_private)
+        {
+            m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendText,
+                m_private.get(),
+                text));
+            return true;
+        }
     }
     catch (...)
     {
-        return false;
     }
 
-    return true;
+    return false;
 }
 
 
@@ -371,17 +387,20 @@ bool SerialPort::send(const uint8_t* const data, size_t length)
 {
     try
     {
-        m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendBinary,
-            m_private.get(),
-            data,
-            length));
+        if (nullptr != m_private)
+        {
+            m_private->m_ioService.post(boost::bind(&SerialPort_Private::sendBinary,
+                m_private.get(),
+                data,
+                length));
+            return true;
+        }
     }
     catch (...)
     {
-        return false;
     }
 
-    return true;
+    return false;
 }
 
 
@@ -389,22 +408,30 @@ bool SerialPort::close() noexcept
 {
 	try
 	{
+            if (nullptr != m_private)
+            {
 		m_private->m_ioService.post(boost::bind(&SerialPort_Private::close,
 			m_private.get(),
 			boost::system::error_code()));
+                return true;
+            }
 	}
 	catch (...)
 	{
-		return false;
 	}
 
-	return true;
+	return false;
 }
 
 
 bool SerialPort::isActive() const
 {
+    if (nullptr != m_private)
+    {
 	return m_private->m_active;
+    }
+
+    return false;
 }
 
 

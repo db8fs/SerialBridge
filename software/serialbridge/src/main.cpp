@@ -18,7 +18,6 @@
 #include "TCPServer.h"
 
 const char* HelloString = "SerialBridge\n\r";
-const char* ReadyString = "SerialBrigde ready\n\r";
 
 /* creates a tcp server socket for bridging serial UART data into a tcp network */
 class SerialBridge :	private SerialPort::ISerialHandler,
@@ -62,9 +61,10 @@ public:
 	{
 		if (tcpConnected && serialConnected)
 		{
+			std::cout << "TCP + Serial ready" << std::endl;
 			if (!readySent)
 			{
-				tcpServer.send(ReadyString);
+				tcpServer.send(HelloString);
 				readySent = true;
 			}
 		}
@@ -96,11 +96,9 @@ public:
 	void onSerialWriteComplete(const char* msg, size_t length) final
 	{
 	}
-	
 
 	void onTcpClientAccept() final
 	{
-		tcpServer.send(HelloString);
 		tcpConnected = true;
 
 		std::cout << "Client Connect" << std::endl;
