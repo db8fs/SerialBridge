@@ -30,13 +30,13 @@ using namespace boost::asio::ip;
 
 
 
-static bool StartWriting(class TcpConnection & connection) noexcept;
-static void ReadOperationComplete(class TcpConnection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
-static void WriteOperationComplete(class TcpConnection & connection, const boost::system::error_code& oError);
+static bool StartWriting(class Connection & connection) noexcept;
+static void ReadOperationComplete(class Connection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
+static void WriteOperationComplete(class Connection & connection, const boost::system::error_code& oError);
 
 
 
-class TcpConnection : public std::enable_shared_from_this<TcpConnection>
+class Connection : public std::enable_shared_from_this<Connection>
 {
 public:
     static constexpr size_t RX_BUF_SIZE = 512;
@@ -48,7 +48,7 @@ public:
 
     TcpServer::ITcpHandler* &   m_handler;
 
-    TcpConnection(tcp::socket socket, TcpServer::ITcpHandler* & handler)
+    Connection(tcp::socket socket, TcpServer::ITcpHandler* & handler)
         : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -144,7 +144,7 @@ public:
 
 
 
-bool StartWriting(TcpConnection & connection) noexcept
+bool StartWriting(Connection & connection) noexcept
 {
     try
     {
@@ -168,7 +168,7 @@ bool StartWriting(TcpConnection & connection) noexcept
 
 
 
-void WriteOperationComplete(TcpConnection & connection, const boost::system::error_code& oError)
+void WriteOperationComplete(Connection & connection, const boost::system::error_code& oError)
 {
     if (oError)
     {
@@ -222,7 +222,7 @@ struct TcpServer_Private
 
     TcpServer::ITcpHandler*  m_handler = nullptr;
 
-    std::shared_ptr<TcpConnection> m_connection;
+    std::shared_ptr<Connection> m_connection;
 
 
     TcpServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
@@ -243,7 +243,7 @@ struct TcpServer_Private
             {
                 if (!ec)
                 {
-                    m_connection = std::make_shared<TcpConnection>(std::move(socket), m_handler);
+                    m_connection = std::make_shared<Connection>(std::move(socket), m_handler);
                     m_connection->start();
                 }
 
