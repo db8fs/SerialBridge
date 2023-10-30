@@ -24,19 +24,19 @@
 #include <boost/date_time/posix_time/posix_time_types.hpp>
 
 
-
 using namespace boost::asio;
 using namespace boost::asio::ip;
+using namespace boost::placeholders;
+
+template <class T> class Connection;
+template <class T> static bool StartWriting(class Connection<T> & connection) noexcept;
+template <class T> static void WriteOperationComplete(class Connection<T> & connection, const boost::system::error_code& oError);
+
+//template <class T> static void ReadOperationComplete(class Connection<T> & connection, const boost::system::error_code& oError, size_t nBytesReceived);
 
 
-
-static bool StartWriting(class Connection & connection) noexcept;
-static void ReadOperationComplete(class Connection & connection, const boost::system::error_code& oError, size_t nBytesReceived);
-static void WriteOperationComplete(class Connection & connection, const boost::system::error_code& oError);
-
-
-
-class Connection : public std::enable_shared_from_this<Connection>
+template <typename SocketType>
+    class Connection : public std::enable_shared_from_this<Connection<SocketType>>
 {
 public:
     static constexpr size_t RX_BUF_SIZE = 512;
@@ -44,11 +44,11 @@ public:
     std::vector<char>      m_rxBuffer;
     std::deque<char>       m_txBuffer;
 
-    tcp::socket            m_socket;
+    SocketType    m_socket;
 
     TcpServer::INetworkHandler* &   m_handler;
 
-    Connection(tcp::socket socket, TcpServer::INetworkHandler* & handler)
+    Connection(SocketType socket, TcpServer::INetworkHandler* & handler)
         : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -68,7 +68,8 @@ public:
 
     void read()
     {
-        auto self(shared_from_this());
+        auto self(std::enable_shared_from_this<Connection<SocketType>>::shared_from_this());
+
         m_socket.async_read_some(boost::asio::buffer(m_rxBuffer.data(), m_rxBuffer.size()),
             [this, self](boost::system::error_code error, std::size_t length)
             {
@@ -119,7 +120,7 @@ public:
 
         if (!bWriteInProgress)
         {
-            StartWriting(*this);
+            StartWriting<tcp::socket>(*this);
         }
     }
 
@@ -134,7 +135,7 @@ public:
 
             if (!bWriteInProgress)
             {
-                StartWriting(*this);
+                StartWriting<tcp::socket>(*this);
             }
         }
     }
@@ -144,15 +145,14 @@ public:
 
 
 
-bool StartWriting(Connection & connection) noexcept
+template <class T>
+bool StartWriting(Connection<T> & connection) noexcept
 {
     try
     {
         boost::asio::async_write(connection.m_socket,
             boost::asio::buffer(&connection.m_txBuffer.front(), 1),
-            boost::bind(WriteOperationComplete,
-                boost::ref(connection),
-                placeholders::error)
+                                 boost::bind(WriteOperationComplete<tcp::socket>, boost::ref(connection), placeholders::error)
         );
     }
     catch (...)
@@ -167,8 +167,8 @@ bool StartWriting(Connection & connection) noexcept
 
 
 
-
-void WriteOperationComplete(Connection & connection, const boost::system::error_code& oError)
+template <class T>
+void WriteOperationComplete(Connection<T> & connection, const boost::system::error_code& oError)
 {
     if (oError)
     {
@@ -216,13 +216,15 @@ static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 
 struct TcpServer_Private
 {
+    using TcpConnection = Connection<tcp::socket>;
+
     io_service &           m_ioService;
     tcp::endpoint          m_endPoint;
     tcp::acceptor          m_acceptor;
 
     TcpServer::INetworkHandler*  m_handler = nullptr;
 
-    std::shared_ptr<Connection> m_connection;
+    std::shared_ptr<TcpConnection> m_connection;
 
 
     TcpServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
@@ -243,7 +245,7 @@ struct TcpServer_Private
             {
                 if (!ec)
                 {
-                    m_connection = std::make_shared<Connection>(std::move(socket), m_handler);
+                    m_connection = std::make_shared<TcpConnection>(std::move(socket), m_handler);
                     m_connection->start();
                 }
 
