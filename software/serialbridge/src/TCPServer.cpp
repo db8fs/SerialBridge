@@ -28,15 +28,15 @@ using namespace boost::asio;
 using namespace boost::asio::ip;
 using namespace boost::placeholders;
 
-template <class T> class Connection;
-template <class T> static bool StartWriting(class Connection<T> & connection) noexcept;
-template <class T> static void WriteOperationComplete(class Connection<T> & connection, const boost::system::error_code& oError);
+template <class T> class NetworkConnection;
+template <class T> static bool StartWriting(class NetworkConnection<T> & connection) noexcept;
+template <class T> static void WriteOperationComplete(class NetworkConnection<T> & connection, const boost::system::error_code& oError);
 
 //template <class T> static void ReadOperationComplete(class Connection<T> & connection, const boost::system::error_code& oError, size_t nBytesReceived);
 
 
 template <typename SocketType>
-    class Connection : public std::enable_shared_from_this<Connection<SocketType>>
+class NetworkConnection : public std::enable_shared_from_this<NetworkConnection<SocketType>>
 {
 public:
     static constexpr size_t RX_BUF_SIZE = 512;
@@ -48,7 +48,7 @@ public:
 
     TcpServer::INetworkHandler* &   m_handler;
 
-    Connection(SocketType socket, TcpServer::INetworkHandler* & handler)
+    NetworkConnection(SocketType socket, TcpServer::INetworkHandler* & handler)
         : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -68,7 +68,7 @@ public:
 
     void read()
     {
-        auto self(std::enable_shared_from_this<Connection<SocketType>>::shared_from_this());
+        auto self(std::enable_shared_from_this<NetworkConnection<SocketType>>::shared_from_this());
 
         m_socket.async_read_some(boost::asio::buffer(m_rxBuffer.data(), m_rxBuffer.size()),
             [this, self](boost::system::error_code error, std::size_t length)
@@ -146,7 +146,7 @@ public:
 
 
 template <class T>
-bool StartWriting(Connection<T> & connection) noexcept
+bool StartWriting(NetworkConnection<T> & connection) noexcept
 {
     try
     {
@@ -168,7 +168,7 @@ bool StartWriting(Connection<T> & connection) noexcept
 
 
 template <class T>
-void WriteOperationComplete(Connection<T> & connection, const boost::system::error_code& oError)
+void WriteOperationComplete(NetworkConnection<T> & connection, const boost::system::error_code& oError)
 {
     if (oError)
     {
@@ -216,7 +216,7 @@ static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 
 struct TcpServer_Private
 {
-    using TcpConnection = Connection<tcp::socket>;
+    using TcpConnection = NetworkConnection<tcp::socket>;
 
     io_service &           m_ioService;
     tcp::endpoint          m_endPoint;
