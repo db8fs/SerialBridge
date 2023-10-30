@@ -1,9 +1,8 @@
-#ifndef TCP_SERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F
-#define TCP_SERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F
+#ifndef NETWORKSERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F
+#define NETWORKSERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F
 
 /**
- * @file		TCPServer.h
- * @created		01.04.2023
+ * @file		NetworkServer.h
  * @author		Falk Schilling (db8fs)
  * @copyright	GPLv3
  */
@@ -13,19 +12,19 @@
 
 
 /** */
-class TcpServer
+class NetworkServer
 {
-	std::shared_ptr<struct TcpServer_Private> m_private;
+    std::shared_ptr<struct NetworkServer_Private> m_private;
 
 public:
 
-	/** creates a tcp server listening on the given socket */
-	TcpServer(const std::string& address, uint16_t tcpPort, const std::string & sslCert);
+    /** creates a tcp server listening on the given socket */
+    NetworkServer(const std::string& address, uint16_t port, const std::string & sslCert);
 
-	TcpServer(const TcpServer&);
-	~TcpServer() noexcept;
+    NetworkServer(const NetworkServer&);
+    ~NetworkServer() noexcept;
 
-	TcpServer& operator=(const TcpServer&);
+    NetworkServer& operator=(const NetworkServer&);
 
     /** defines asynchronous read or write completion handlers */
     void setHandler(class INetworkHandler* const handler);
@@ -50,4 +49,4 @@ public:
 
 //////////////////////////////////////////////////////////////////////////////
 
-#endif /* TCP_SERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F */
+#endif /* TCPSERVER_H_733511C1_8156_4C83_BB22_81FD2CDB2E6F */

@@ -9,7 +9,7 @@
 #include <memory>
 
 #include "System.h"
-#include "TCPServer.h"
+#include "NetworkServer.h"
 
 #include <deque>
 #include <map>
@@ -33,7 +33,7 @@ static tcp::endpoint createEndpoint(const std::string & address, uint16_t port)
 
 
 
-struct TcpServer_Private
+struct NetworkServer_Private
 {
     using TcpConnection = NetworkConnection<tcp::socket>;
 
@@ -46,7 +46,7 @@ struct TcpServer_Private
     std::shared_ptr<TcpConnection> m_connection;
 
 
-    TcpServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
+    NetworkServer_Private(const std::string & address, uint16_t port, const std::string & sslCert)
         :   m_ioService(System::IOService()),
             m_endPoint(createEndpoint(address, port)),
             m_acceptor(m_ioService, m_endPoint)
@@ -113,11 +113,11 @@ struct TcpServer_Private
 ///////////////////////////
 
 
-TcpServer::TcpServer(const std::string& address, uint16_t port, const std::string & sslCert)
+NetworkServer::NetworkServer(const std::string& address, uint16_t port, const std::string & sslCert)
 {
     try
     {
-        m_private = std::shared_ptr<TcpServer_Private>(new TcpServer_Private(address, port, sslCert));
+        m_private = std::shared_ptr<NetworkServer_Private>(new NetworkServer_Private(address, port, sslCert));
 
     }
     catch (...)
@@ -127,14 +127,14 @@ TcpServer::TcpServer(const std::string& address, uint16_t port, const std::strin
 }
 
 
-TcpServer::TcpServer(const TcpServer& rhs)
+NetworkServer::NetworkServer(const NetworkServer& rhs)
     : m_private(rhs.m_private)
 {
 }
 
 
 
-TcpServer::~TcpServer() noexcept
+NetworkServer::~NetworkServer() noexcept
 {
     try
     {
@@ -146,7 +146,7 @@ TcpServer::~TcpServer() noexcept
     }
 }
 
-TcpServer& TcpServer::operator=(const TcpServer& rhs)
+NetworkServer& NetworkServer::operator=(const NetworkServer& rhs)
 {
     if (this != &rhs)
     {
@@ -156,17 +156,17 @@ TcpServer& TcpServer::operator=(const TcpServer& rhs)
 }
 
 
-void TcpServer::setHandler(INetworkHandler* const handler)
+void NetworkServer::setHandler(INetworkHandler* const handler)
 {
     m_private->m_handler = handler;
 }
 
 
-bool TcpServer::send(const char cMsg) noexcept
+bool NetworkServer::send(const char cMsg) noexcept
 {
 	try
-	{
-		m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendChar, m_private.get(), cMsg));
+    {
+        m_private->m_ioService.post(boost::bind(&NetworkServer_Private::sendChar, m_private.get(), cMsg));
 	}
 	catch (...)
 	{
@@ -177,11 +177,11 @@ bool TcpServer::send(const char cMsg) noexcept
 }
 
 
-bool TcpServer::send(const std::string& text)
+bool NetworkServer::send(const std::string& text)
 {
     try
     {
-        m_private->m_ioService.post(boost::bind(&TcpServer_Private::sendText,
+        m_private->m_ioService.post(boost::bind(&NetworkServer_Private::sendText,
             m_private.get(),
             text));
     }
@@ -197,11 +197,11 @@ bool TcpServer::send(const std::string& text)
 
 
 
-bool TcpServer::close() noexcept
+bool NetworkServer::close() noexcept
 {
 	try
-	{
-		m_private->m_ioService.post(boost::bind(&TcpServer_Private::close,
+    {
+        m_private->m_ioService.post(boost::bind(&NetworkServer_Private::close,
 			m_private.get(),
 			boost::system::error_code()));
 	}
@@ -214,7 +214,7 @@ bool TcpServer::close() noexcept
 }
 
 
-bool TcpServer::isActive() const
+bool NetworkServer::isActive() const
 {
 	return m_private->m_connection != nullptr;
 }

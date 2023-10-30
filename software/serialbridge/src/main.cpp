@@ -16,7 +16,7 @@
 #include "SerialPort.h"
 #include "System.h"
 #include "INetworkHandler.h"
-#include "TCPServer.h"
+#include "NetworkServer.h"
 
 const char* HelloString = "SerialBridge\n\r";
 
@@ -25,8 +25,8 @@ class SerialBridge :	private SerialPort::ISerialHandler,
                      private INetworkHandler
 {
 	Arguments  options;
-	SerialPort serialPort;
-	TcpServer  tcpServer;
+    SerialPort serialPort;
+    NetworkServer  tcpServer;
 
 	bool serialConnected = false;
 	bool tcpConnected = false;

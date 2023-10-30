@@ -15,12 +15,12 @@ set( HEADER_FILES  "${CMAKE_SOURCE_DIR}/src/Arguments.h"
                    "${CMAKE_SOURCE_DIR}/src/NetworkConnection.h"
                    "${CMAKE_SOURCE_DIR}/src/SerialPort.h"
                    "${CMAKE_SOURCE_DIR}/src/System.h"
-                   "${CMAKE_SOURCE_DIR}/src/TCPServer.h" )
+                   "${CMAKE_SOURCE_DIR}/src/NetworkServer.h" )
 
 set( SRC_FILES      "${CMAKE_SOURCE_DIR}/src/Arguments.cpp"
                     "${CMAKE_SOURCE_DIR}/src/SerialPort.cpp"
                     "${CMAKE_SOURCE_DIR}/src/System.cpp"
-                    "${CMAKE_SOURCE_DIR}/src/TCPServer.cpp"
+                    "${CMAKE_SOURCE_DIR}/src/NetworkServer.cpp"
                     "${CMAKE_SOURCE_DIR}/src/main.cpp" )
 
 add_executable( ${PROJECT_NAME}
