@@ -19,18 +19,6 @@ class TcpServer
 
 public:
 
-    class INetworkHandler
-	{
-    public:
-        virtual ~INetworkHandler() {}
-
-        virtual void onNetworkReadComplete(const char* msg, size_t length) = 0;
-        virtual void onNetworkClientAccept() = 0;
-        virtual void onNetworkClientDisconnect() = 0;
-	};
-
-
-
 	/** creates a tcp server listening on the given socket */
 	TcpServer(const std::string& address, uint16_t tcpPort, const std::string & sslCert);
 
@@ -40,7 +28,7 @@ public:
 	TcpServer& operator=(const TcpServer&);
 
     /** defines asynchronous read or write completion handlers */
-    void setHandler(INetworkHandler* const handler);
+    void setHandler(class INetworkHandler* const handler);
 
 	/** transmit single character */
 	bool send(const char cMsg) noexcept;

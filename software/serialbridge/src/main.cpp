@@ -15,13 +15,14 @@
 #include "Arguments.h"
 #include "SerialPort.h"
 #include "System.h"
+#include "INetworkHandler.h"
 #include "TCPServer.h"
 
 const char* HelloString = "SerialBridge\n\r";
 
 /* creates a tcp server socket for bridging serial UART data into a tcp network */
 class SerialBridge :	private SerialPort::ISerialHandler,
-                     private TcpServer::INetworkHandler
+                     private INetworkHandler
 {
 	Arguments  options;
 	SerialPort serialPort;

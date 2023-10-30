@@ -11,6 +11,8 @@ include( cmake/Boost.cmake )
 include_directories( "${CMAKE_SOURCE_DIR}/src/" )
 
 set( HEADER_FILES  "${CMAKE_SOURCE_DIR}/src/Arguments.h" 
+                   "${CMAKE_SOURCE_DIR}/src/INetworkHandler.h"
+                   "${CMAKE_SOURCE_DIR}/src/NetworkConnection.h"
                    "${CMAKE_SOURCE_DIR}/src/SerialPort.h"
                    "${CMAKE_SOURCE_DIR}/src/System.h"
                    "${CMAKE_SOURCE_DIR}/src/TCPServer.h" )
