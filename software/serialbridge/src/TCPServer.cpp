@@ -46,9 +46,9 @@ public:
 
     tcp::socket            m_socket;
 
-    TcpServer::ITcpHandler* &   m_handler;
+    TcpServer::INetworkHandler* &   m_handler;
 
-    Connection(tcp::socket socket, TcpServer::ITcpHandler* & handler)
+    Connection(tcp::socket socket, TcpServer::INetworkHandler* & handler)
         : m_socket(std::move(socket)), m_handler(handler)
     {
         m_rxBuffer.resize(RX_BUF_SIZE);
@@ -60,7 +60,7 @@ public:
     {
         if (nullptr != m_handler)
         {
-            m_handler->onTcpClientAccept();
+            m_handler->onNetworkClientAccept();
         }
 
         read();
@@ -79,7 +79,7 @@ public:
                     {
                         if (nullptr != m_handler)
                         {
-                            m_handler->onTcpClientDisconnect();
+                            m_handler->onNetworkClientDisconnect();
                         }
                     }
                 }
@@ -87,7 +87,7 @@ public:
                 {
                     if (nullptr != m_handler)
                     {
-                        m_handler->onTcpReadComplete(m_rxBuffer.data(), length);
+                        m_handler->onNetworkReadComplete(m_rxBuffer.data(), length);
                     }
 
                     read();
@@ -220,7 +220,7 @@ struct TcpServer_Private
     tcp::endpoint          m_endPoint;
     tcp::acceptor          m_acceptor;
 
-    TcpServer::ITcpHandler*  m_handler = nullptr;
+    TcpServer::INetworkHandler*  m_handler = nullptr;
 
     std::shared_ptr<Connection> m_connection;
 
@@ -335,7 +335,7 @@ TcpServer& TcpServer::operator=(const TcpServer& rhs)
 }
 
 
-void TcpServer::setHandler(ITcpHandler* const handler)
+void TcpServer::setHandler(INetworkHandler* const handler)
 {
     m_private->m_handler = handler;
 }

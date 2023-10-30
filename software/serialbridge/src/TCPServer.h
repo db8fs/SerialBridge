@@ -19,14 +19,14 @@ class TcpServer
 
 public:
 
-	class ITcpHandler
+    class INetworkHandler
 	{
-	public:
-		virtual ~ITcpHandler() {}
+    public:
+        virtual ~INetworkHandler() {}
 
-		virtual void onTcpReadComplete(const char* msg, size_t length) = 0;
-		virtual void onTcpClientAccept() = 0;
-		virtual void onTcpClientDisconnect() = 0;
+        virtual void onNetworkReadComplete(const char* msg, size_t length) = 0;
+        virtual void onNetworkClientAccept() = 0;
+        virtual void onNetworkClientDisconnect() = 0;
 	};
 
 
@@ -39,8 +39,8 @@ public:
 
 	TcpServer& operator=(const TcpServer&);
 
-	/** defines asynchronous read or write completion handlers */
-	void setHandler(ITcpHandler* const handler);
+    /** defines asynchronous read or write completion handlers */
+    void setHandler(INetworkHandler* const handler);
 
 	/** transmit single character */
 	bool send(const char cMsg) noexcept;

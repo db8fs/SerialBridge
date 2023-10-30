@@ -21,7 +21,7 @@ const char* HelloString = "SerialBridge\n\r";
 
 /* creates a tcp server socket for bridging serial UART data into a tcp network */
 class SerialBridge :	private SerialPort::ISerialHandler,
-						private TcpServer::ITcpHandler
+                     private TcpServer::INetworkHandler
 {
 	Arguments  options;
 	SerialPort serialPort;
@@ -84,7 +84,7 @@ public:
 		}
 	}
 
-	void onTcpReadComplete(const char* msg, size_t length) final
+    void onNetworkReadComplete(const char* msg, size_t length) final
 	{
 		if (tcpConnected)
 		{
@@ -97,7 +97,7 @@ public:
 	{
 	}
 
-	void onTcpClientAccept() final
+    void onNetworkClientAccept() final
 	{
 		tcpConnected = true;
 
@@ -106,7 +106,7 @@ public:
 		checkReadyness();
 	}
 
-	void onTcpClientDisconnect() final
+    void onNetworkClientDisconnect() final
 	{
 		tcpConnected = false;
 		readySent = false;
