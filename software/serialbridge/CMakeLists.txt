@@ -13,11 +13,13 @@ include_directories( "${CMAKE_SOURCE_DIR}/src/" )
 set( HEADER_FILES  "${CMAKE_SOURCE_DIR}/src/Arguments.h" 
                    "${CMAKE_SOURCE_DIR}/src/INetworkHandler.h"
                    "${CMAKE_SOURCE_DIR}/src/NetworkConnection.h"
+                   "${CMAKE_SOURCE_DIR}/src/SerialBridge.h"
                    "${CMAKE_SOURCE_DIR}/src/SerialPort.h"
                    "${CMAKE_SOURCE_DIR}/src/System.h"
                    "${CMAKE_SOURCE_DIR}/src/NetworkServer.h" )
 
 set( SRC_FILES      "${CMAKE_SOURCE_DIR}/src/Arguments.cpp"
+                    "${CMAKE_SOURCE_DIR}/src/SerialBridge.cpp"
                     "${CMAKE_SOURCE_DIR}/src/SerialPort.cpp"
                     "${CMAKE_SOURCE_DIR}/src/System.cpp"
                     "${CMAKE_SOURCE_DIR}/src/NetworkServer.cpp"

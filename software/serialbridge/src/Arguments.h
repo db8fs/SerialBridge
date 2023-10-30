@@ -8,6 +8,7 @@
  * @copyright	GPLv3
  */
 
+#include <cstdint>
 #include <iostream>
 #include <string>
 
