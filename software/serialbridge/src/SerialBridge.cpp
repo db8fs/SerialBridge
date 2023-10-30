@@ -7,7 +7,7 @@ static const char* HelloString = "SerialBridge\n\r";
 SerialBridge::SerialBridge(const Arguments& options)
     : options(options),
     serialPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None),
-    tcpServer(options.strAddress, options.port, options.strSSLCert)
+    tcpServer(options.strAddress, options.port, NetworkServer::eTransport::TcpV4, options.strSSLCert)
 {
     serialPort.setHandler(this);
     tcpServer.setHandler(this);

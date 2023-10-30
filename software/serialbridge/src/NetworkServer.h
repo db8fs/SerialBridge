@@ -14,12 +14,19 @@
 /** */
 class NetworkServer
 {
-    std::shared_ptr<struct NetworkServer_Private> m_private;
+    std::shared_ptr<struct AbstractServer> m_private;
 
 public:
 
+	enum class eTransport : uint8_t
+	{
+		TcpV4 = 1,
+		UdpV4 = 2
+	};
+
+
     /** creates a tcp server listening on the given socket */
-    NetworkServer(const std::string& address, uint16_t port, const std::string & sslCert);
+    NetworkServer(const std::string& address, uint16_t port, eTransport protocol, const std::string & sslCert);
 
     NetworkServer(const NetworkServer&);
     ~NetworkServer() noexcept;

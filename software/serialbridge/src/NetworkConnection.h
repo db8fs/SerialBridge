@@ -11,7 +11,7 @@
 #include <deque>
 #include <vector>
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 using namespace boost::placeholders;
 
 #include <boost/asio.hpp>

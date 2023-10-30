@@ -9,7 +9,7 @@ class INetworkHandler
 public:
     virtual ~INetworkHandler() {}
 
-    virtual void onNetworkReadComplete(const char* msg, std::size_t length) = 0;
+    virtual void onNetworkReadComplete(const char* msg, size_t length) = 0;
     virtual void onNetworkClientAccept() = 0;
     virtual void onNetworkClientDisconnect() = 0;
 };
