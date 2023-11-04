@@ -4,10 +4,19 @@
 
 static const char* HelloString = "SerialBridge\n\r";
 
+static NetworkServer::eTransport getServerType(const Arguments& options)
+{
+    if (options.useUDP)
+        return NetworkServer::eTransport::UdpV4;
+
+    return NetworkServer::eTransport::TcpV4;
+}
+
+
 SerialBridge::SerialBridge(const Arguments& options)
     : options(options),
     serialPort(options.strDevice, options.uiBaudrate, SerialPort::eFlowControl::None),
-    tcpServer(options.strAddress, options.port, NetworkServer::eTransport::TcpV4, options.strSSLCert)
+    tcpServer(options.strAddress, options.port, getServerType(options), options.strSSLCert)
 {
     serialPort.setHandler(this);
     tcpServer.setHandler(this);

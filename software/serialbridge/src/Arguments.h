@@ -21,7 +21,8 @@ struct Arguments
       port(23),
       strSSLCert(""),
       strDevice("/dev/ttyUSB0"),
-      uiBaudrate(115200)
+      uiBaudrate(115200),
+      useUDP(false)
   {
   }
 
@@ -30,6 +31,7 @@ struct Arguments
   std::string strSSLCert;
   std::string strDevice;
   uint32_t uiBaudrate;
+  bool useUDP;
 };
 
 std::ostream &operator<<(std::ostream & oStream, const Arguments & conf);

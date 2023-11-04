@@ -35,7 +35,7 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
     options_description cmdlineOptions("Usage");
     options_description generic("Generic");
     options_description device("Device");
-    options_description serverInterface("TCP/IP Server Interface");
+    options_description serverInterface("Server Interface (UDP/TCP)");
 
     generic.add_options()
             ("help,h", "this description")
@@ -50,8 +50,9 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
 
     serverInterface.add_options()
             ("ip,i", value< std::string >()->default_value( System::ALL_INTERFACES ), "Address of the server" )
-            ("port,p", value<uint16_t>()->default_value( 23 ), "Tcp port of the server" )
-            ("ssl-cert,r", value< std::string >()->default_value( "" ), "ssl cert of the server" )
+            ("port,p", value<uint16_t>()->default_value( 23 ), "Port of the server" )
+            ("udp,u", "Use UDP/IP instead of TCP/IP" )
+            //("ssl-cert,r", value< std::string >()->default_value( "" ), "ssl cert of the server" )
             ;
 
     cmdlineOptions.add(generic).add(device).add(serverInterface);
@@ -68,25 +69,30 @@ bool parseArguments(Arguments & config, int argc, char* argv[])
             config.uiBaudrate = vm["baudrate"].as<unsigned int>();
         }
 
-        if(vm.count("device"))
+        if (vm.count("device"))
         {
             config.strDevice = vm["device"].as< std::string >();
         }
 
         // webserver
-        if(vm.count("ip"))
+        if (vm.count("ip"))
         {
             config.strAddress = vm["ip"].as< std::string > ();
         }
 
-        if(vm.count("port"))
+        if (vm.count("port"))
         {
             config.port = vm["port"].as<uint16_t> ();
         }
 
-        if(vm.count("ssl-cert"))
+        if (vm.count("ssl-cert"))
         {
             config.strSSLCert = vm["ssl-cert"].as< std::string >();
+        }
+
+        if (vm.count("udp"))
+        {
+            config.useUDP = true;
         }
 
 

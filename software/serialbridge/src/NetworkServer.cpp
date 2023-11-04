@@ -141,6 +141,8 @@ NetworkServer::NetworkServer(const std::string& address, uint16_t port, eTranspo
             m_private = std::shared_ptr<AbstractServer>(new ConnectionOriented<tcp::endpoint, tcp::socket, tcp::acceptor>(address, port, sslCert));
             break;
         case eTransport::UdpV4:
+            std::cerr << "UDP not implemented yet" << std::endl;
+            throw;
             //m_private = std::shared_ptr<AbstractServer>(new NetworkServer_Impl<udp::endpoint, udp::socket, udp::acceptor>(address, port, sslCert));
             break;
         }
